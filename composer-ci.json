@@ -1,0 +1,78 @@
+{
+    "name": "msstc4symfony/dto-generator-bridge-runtime",
+    "description": "Runtime of msstc4symfony/dto-generator-bridge: the Serializer normalizer and attribute the generated DTOs use in a Symfony application.",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Maxim Shamaev",
+            "email": "maxim.shamaev@gmail.com"
+        }
+    ],
+    "keywords": [
+        "openapi",
+        "dto",
+        "symfony",
+        "serializer"
+    ],
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "require": {
+        "php": ">=7.4"
+    },
+    "require-dev": {
+        "deptrac/deptrac": "^4.6",
+        "friendsofphp/php-cs-fixer": "^3.55",
+        "infection/infection": "^0.29 || ^0.32",
+        "phpdocumentor/reflection-docblock": "^5.6",
+        "phpstan/extension-installer": "^1.4",
+        "phpstan/phpstan": "^2.1",
+        "phpstan/phpstan-phpunit": "^2.0",
+        "phpstan/phpstan-strict-rules": "^2.0",
+        "phpunit/phpunit": "^9.6",
+        "rector/rector": "^2.1",
+        "roave/backward-compatibility-check": "^8.20",
+        "roave/security-advisories": "dev-latest",
+        "spaze/phpstan-disallowed-calls": "^4.0",
+        "symfony/framework-bundle": "^5.4|^6.4|^7.4|^8.0",
+        "symfony/property-access": "^5.4|^6.4|^7.4|^8.0",
+        "symfony/property-info": "^5.4|^6.4|^7.4|^8.0",
+        "symfony/serializer": "^5.4|^6.4|^7.4|^8.0"
+    },
+    "suggest": {
+        "symfony/serializer": "The normalizer of $additionalProperties is a Serializer normalizer",
+        "symfony/framework-bundle": "To register it with DtoGeneratorRuntimeBundle"
+    },
+    "conflict": {
+        "symfony/framework-bundle": "<5.4",
+        "symfony/symfony": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "Msstc4Symfony\\DtoGeneratorBridge\\Runtime\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Msstc4Symfony\\DtoGeneratorBridge\\Runtime\\Test\\": "tests/"
+        }
+    },
+    "extra": {
+        "symfony": {
+            "require": "^6.4|^7.0|^8.0"
+        },
+        "bundle-standard": {
+            "runtime": "php74"
+        }
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "infection/extension-installer": true,
+            "phpstan/extension-installer": true
+        },
+        "audit": {
+            "abandoned": "report"
+        }
+    }
+}

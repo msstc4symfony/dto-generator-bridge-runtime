@@ -1,0 +1,22 @@
+deptrac:
+  paths:
+    - ./src
+  layers:
+    # Runs in the application beside symfony/serializer: Symfony only, never the generator.
+    - name: Runtime
+      collectors:
+        - type: classNameRegex
+          value: '#^Msstc4Symfony\\DtoGeneratorBridge\\Runtime\\(?!Bundle\\)#'
+    # Registers the runtime in a Symfony application.
+    - name: Bundle
+      collectors:
+        - type: classNameRegex
+          value: '#^Msstc4Symfony\\DtoGeneratorBridge\\Runtime\\Bundle\\#'
+    - name: Generator
+      collectors:
+        - type: classNameRegex
+          value: '#^(MSSTC4PHP\\DtoGenerator|Msstc4Symfony\\DtoGeneratorBridge\\(?!Runtime\\))#'
+  ruleset:
+    Runtime: ~
+    Bundle: [Runtime]
+    Generator: ~

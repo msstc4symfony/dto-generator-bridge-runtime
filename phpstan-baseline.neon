@@ -1,0 +1,8 @@
+parameters:
+	ignoreErrors: []
+	excludePaths:
+		# Code that runs only beside an installed Symfony: phpVersion 70400 cannot read Symfony 8's signatures (a native
+		# "mixed" becomes a class name, PHP 8.4 classes stay unknown). phpstan-symfony.neon analyses it for PHP 8.4.
+		- src/AdditionalPropertiesNormalizer.php
+		- src/Bundle
+		- tests/Unit

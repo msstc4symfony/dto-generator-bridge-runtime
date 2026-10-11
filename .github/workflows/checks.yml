@@ -1,0 +1,59 @@
+name: Code Quality Checks
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths-ignore:
+      - '**/*.md'
+      - LICENSE
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '**/*.md'
+      - LICENSE
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  standard:
+    uses: msstc4symfony/bundle-standard/.github/workflows/php-bundle.yml@v1.1.0
+    with:
+      slug: msstc4symfony/dto-generator-bridge-runtime
+      # The normalizer runs beside symfony/serializer 5.4 to 8. 7.4 comes first because the prefer-lowest cell takes the first entry, and early 5.4
+      # and 6.4 releases are not clean on PHP 8.4. The runtime profile php74 (composer.json) makes the minimal job run
+      # on PHP 7.4.
+      symfony-versions: '[{"version":"7.4.*","label":"7.4","codecov":false},{"version":"5.4.*","label":"5.4","codecov":false},{"version":"6.4.*","label":"6.4","codecov":false},{"version":"8.*","label":"8","codecov":false}]'
+      # Measured MSI 100 % on 2026-10-11 UTC; the package keeps every mutant killed.
+      infection-min-msi: 100
+      infection-min-covered-msi: 100
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  # What the standard's jobs cannot run: the Symfony-bound code against Symfony 8 on PHP 8.4, and the bans on PHP 8
+  # functions and classes that phpVersion 70400 does not catch.
+  runtime:
+    name: Runtime checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+          tools: composer:v2
+      - name: Locate the Composer cache
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v5
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-runtime-${{ hashFiles('composer-ci.json') }}
+          restore-keys: composer-runtime-
+      - run: composer update --no-interaction --no-progress
+        env:
+          COMPOSER: composer-ci.json
+      - run: vendor/bin/phpstan analyse -c phpstan-symfony.neon --no-progress
+      - run: vendor/bin/phpstan analyse -c phpstan-php74.neon --no-progress
