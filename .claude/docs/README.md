@@ -6,7 +6,7 @@
 ## Устройство
 
 - `src/` (слой Runtime): `AdditionalProperties`, `AdditionalPropertiesNormalizer`, `ClassLayout` — без изменений
-  относительно моста 1.1. Namespace `Msstc4Symfony\DtoGeneratorBridge\Runtime\` не менять: его FQCN пишет
+  из `src/Runtime` моста (в релиз моста не попадали: `spread` вышел бы в 1.2). Namespace `Msstc4Symfony\DtoGeneratorBridge\Runtime\` не менять: его FQCN пишет
   сгенерированный код.
 - `src/Bundle` (слой Bundle, зависит от Runtime): `DtoGeneratorRuntimeBundle` → `DtoGeneratorRuntimeExtension`
   (алиас `dto_generator_runtime`, пустая `Configuration` — любой ключ ошибка) → `Normalizers::register()`;
@@ -18,8 +18,7 @@
 
 - `excludePaths` — в `phpstan-baseline.neon`: `phpstan.dist.neon` стандарт требует побайтно. После `phpstan -b`
   вернуть исключения руками.
-- `composer.json` конфликтует с мостом `<1.2`: в 1.1 те же FQCN лежат в `src/Runtime` моста (дубли классов при
-  classmap).
+- Конфликта с мостом нет: ни один релиз моста не содержал `src/Runtime` (1.1.0 — без `spread`).
 - Нормалайзер грузится только на PHP 8.0+ (нативный `mixed`); на 7.4 пакет ставится рядом с мостом, и
   `Normalizers` ничего не регистрирует (`class_exists(WeakMap::class)`). Ветку проверяет задание CI
   «Bundle on PHP 7.4» (Symfony 5.4) — стандартная матрица идёт только на PHP 8.

@@ -28,7 +28,6 @@
         "symfony/framework-bundle": "To register it with DtoGeneratorRuntimeBundle, which needs symfony/http-kernel and symfony/dependency-injection"
     },
     "conflict": {
-        "msstc4symfony/dto-generator-bridge": "<1.2",
         "symfony/config": "<5.4",
         "symfony/dependency-injection": "<5.4",
         "symfony/framework-bundle": "<5.4",
