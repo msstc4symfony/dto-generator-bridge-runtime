@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Unit\Fixture;
+namespace Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Fixture;
 
 use Msstc4Symfony\DtoGeneratorBridge\Runtime\AdditionalProperties;
 
-final class Cat extends Animal implements Tagged
+final class Car implements Vehicle, BodyStyled
 {
-    public string $name = '';
+    public int $wheels = 0;
 
     /**
      * @var array<string, string>

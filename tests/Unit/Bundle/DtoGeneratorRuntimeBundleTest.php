@@ -7,8 +7,10 @@ namespace Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Unit\Bundle;
 use Msstc4Symfony\DtoGeneratorBridge\Runtime\AdditionalPropertiesNormalizer;
 use Msstc4Symfony\DtoGeneratorBridge\Runtime\Bundle\DependencyInjection\CompilerPass\DropOrphanNormalizerPass;
 use Msstc4Symfony\DtoGeneratorBridge\Runtime\Bundle\DependencyInjection\DtoGeneratorRuntimeExtension;
+use Msstc4Symfony\DtoGeneratorBridge\Runtime\Bundle\DependencyInjection\Normalizers;
 use Msstc4Symfony\DtoGeneratorBridge\Runtime\Bundle\DtoGeneratorRuntimeBundle;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\Config\Definition\Exception\InvalidConfigurationException;
 use Symfony\Component\DependencyInjection\Compiler\PassConfig;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Reference;
@@ -39,6 +41,60 @@ final class DtoGeneratorRuntimeBundleTest extends TestCase
             new Reference('serializer.name_converter.metadata_aware'),
         ], $definition->getArguments());
         self::assertSame(['serializer.normalizer' => [[]]], $definition->getTags());
+    }
+
+    /**
+     * @requires PHP 8.0
+     */
+    public function testKeepsTheNormalizerPrivate(): void
+    {
+        $container = new ContainerBuilder();
+        Normalizers::register($container);
+
+        self::assertFalse($container->getDefinition(AdditionalPropertiesNormalizer::class)->isPublic());
+    }
+
+    /**
+     * @requires PHP 8.0
+     */
+    public function testRegistersTheSameDefinitionForEitherBundle(): void
+    {
+        $once = new ContainerBuilder();
+        Normalizers::register($once);
+        $twice = new ContainerBuilder();
+        Normalizers::register($twice);
+        Normalizers::register($twice);
+
+        self::assertEquals($once->getDefinitions(), $twice->getDefinitions());
+    }
+
+    /**
+     * The normalizer's signatures need PHP 8.0; on 7.4 the package is only installed beside the bridge.
+     *
+     * @requires PHP < 8.0
+     */
+    public function testRegistersNothingOnPhp74(): void
+    {
+        $container = new ContainerBuilder();
+        Normalizers::register($container);
+
+        self::assertFalse($container->hasDefinition(AdditionalPropertiesNormalizer::class));
+    }
+
+    public function testNamesItsConfigurationDtoGeneratorRuntime(): void
+    {
+        $extension = (new DtoGeneratorRuntimeBundle())->getContainerExtension();
+
+        self::assertInstanceOf(DtoGeneratorRuntimeExtension::class, $extension);
+        self::assertSame('dto_generator_runtime', $extension->getAlias());
+    }
+
+    public function testTakesNoOptions(): void
+    {
+        $this->expectException(InvalidConfigurationException::class);
+        $this->expectExceptionMessage('Unrecognized option "anything" under "dto_generator_runtime"');
+
+        (new DtoGeneratorRuntimeExtension())->load([['anything' => true]], new ContainerBuilder());
     }
 
     public function testDropsTheNormalizerWithoutTheObjectNormalizer(): void

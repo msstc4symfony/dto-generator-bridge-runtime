@@ -23,7 +23,8 @@ The package installs on PHP 7.4 too, beside the bridge, which runs inside the ge
 
 ## Installation
 
-The packages are not on Packagist yet, so register the GitHub repositories first:
+The packages are not on Packagist yet, so register the GitHub repositories first (the generator's only for the
+bridge, a development dependency):
 
 ```sh
 composer config repositories.msstc4php-dto-generator vcs https://github.com/msstc4php/dto-generator

@@ -25,10 +25,15 @@
     },
     "suggest": {
         "symfony/serializer": "The normalizer of $additionalProperties is a Serializer normalizer",
-        "symfony/framework-bundle": "To register it with DtoGeneratorRuntimeBundle"
+        "symfony/framework-bundle": "To register it with DtoGeneratorRuntimeBundle, which needs symfony/http-kernel and symfony/dependency-injection"
     },
     "conflict": {
+        "msstc4symfony/dto-generator-bridge": "<1.2",
+        "symfony/config": "<5.4",
+        "symfony/dependency-injection": "<5.4",
         "symfony/framework-bundle": "<5.4",
+        "symfony/http-kernel": "<5.4",
+        "symfony/serializer": "<5.4",
         "symfony/symfony": "*"
     },
     "autoload": {
@@ -43,7 +48,7 @@
     },
     "extra": {
         "symfony": {
-            "require": "^6.4|^7.0|^8.0"
+            "require": "^5.4|^6.4|^7.0|^8.0"
         },
         "bundle-standard": {
             "runtime": "php74"

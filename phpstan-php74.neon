@@ -1,5 +1,5 @@
 # Only the bans on PHP 8 functions and classes: the package must load beside the bridge on PHP 7.4, and phpVersion 70400 in
-# phpstan.dist.neon does not catch what exists in the analysing runtime. Run on PHP 8.4 by the "Bridge checks" job.
+# phpstan.dist.neon does not catch what exists in the analysing runtime. Run on PHP 8.4 by the "Runtime checks" job.
 parameters:
     customRulesetUsed: true
     # extension-installer registers strict-rules too; the main configs run them.

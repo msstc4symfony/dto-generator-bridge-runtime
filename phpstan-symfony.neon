@@ -8,4 +8,5 @@ parameters:
         - src/AdditionalPropertiesNormalizer.php
         - src/Bundle
         - tests/Unit
+        - tests/Fixture
         - tests/Integration

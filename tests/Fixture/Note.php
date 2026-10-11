@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Unit\Fixture;
+namespace Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Fixture;
 
 use Msstc4Symfony\DtoGeneratorBridge\Runtime\AdditionalProperties;
 
-final class Car implements Vehicle, BodyStyled
+final class Note
 {
-    public int $wheels = 0;
+    public ?string $lastSeenAt = null;
 
     /**
      * @var array<string, string>

@@ -6,7 +6,7 @@ namespace Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Integration\Bundle;
 
 use FilesystemIterator;
 use Msstc4Symfony\DtoGeneratorBridge\Runtime\AdditionalPropertiesNormalizer;
-use Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Unit\Fixture\Box;
+use Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Fixture\Box;
 use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;

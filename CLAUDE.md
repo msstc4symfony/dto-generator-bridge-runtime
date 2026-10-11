@@ -15,7 +15,8 @@ The namespace `Msstc4Symfony\DtoGeneratorBridge\Runtime\` is the bridge's old on
 purpose: generated code names the attribute, so it must not change. The package must
 parse on **PHP 7.4** (the bridge requires it and runs there; bundle-standard runtime
 profile `php74`), while the normalizer and the bundle's service need PHP 8.0+: no PHP 8
-syntax — hence `mixed` in docblocks, single-line `#[...]`, `class_exists(WeakMap::class)`.
+syntax; the normalizer's native `mixed` parses on 7.4 as a class name, so the file
+parses but must not load there — hence single-line `#[...]` and the `class_exists(WeakMap::class)` guard.
 
 ## Common commands
 
@@ -31,5 +32,7 @@ All in `Makefile` (shared bundle-standard template):
 - Code comments in English, only the non-obvious "why".
 - Every change: tests first, `make check`, `make test`, `make infection` (MSI 100 %).
 - User-facing behaviour changes go into `CHANGELOG.md` (Unreleased) and `README.md`.
+- `excludePaths` live in `phpstan-baseline.neon` because bundle-standard pins
+  `phpstan.dist.neon` byte for byte; regenerating the baseline (`-b`) drops them — restore them.
 - The bridge registers the normalizer through `Normalizers::register()` too: keep it the
   single definition.

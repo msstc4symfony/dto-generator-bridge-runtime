@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Unit\Fixture;
+namespace Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Fixture;
 
 use Msstc4Symfony\DtoGeneratorBridge\Runtime\AdditionalProperties;
 
-final class Note
+final class Cat extends Animal implements Tagged
 {
-    public ?string $lastSeenAt = null;
+    public string $name = '';
 
     /**
      * @var array<string, string>
