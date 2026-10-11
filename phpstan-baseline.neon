@@ -6,3 +6,4 @@ parameters:
 		- src/AdditionalPropertiesNormalizer.php
 		- src/Bundle
 		- tests/Unit
+		- tests/Integration

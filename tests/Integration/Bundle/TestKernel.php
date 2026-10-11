@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Unit\Bundle;
+namespace Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Integration\Bundle;
 
 use Msstc4Symfony\DtoGeneratorBridge\Runtime\Bundle\DtoGeneratorRuntimeBundle;
 use Symfony\Bundle\FrameworkBundle\FrameworkBundle;
