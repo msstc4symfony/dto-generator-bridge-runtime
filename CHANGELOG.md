@@ -6,6 +6,12 @@ All notable changes to this project are documented in this file. The format foll
 
 ## [Unreleased]
 
+### Added
+
+- The Validator constraints `DependentRequired`, `Keys` and `Contains`, with their validators, for the JSON Schema
+  keywords `dependentRequired`, `propertyNames` and `contains` (with `minContains` and `maxContains`), which
+  `msstc4symfony/dto-generator-bridge` writes. They work on PHP 7.4 and with `symfony/validator` 5.4 to 8.
+
 ## [1.0.0] - 2026-10-12
 
 ### Added
@@ -15,7 +21,6 @@ All notable changes to this project are documented in this file. The format foll
   generates need neither the bridge nor the generator in production.
 - `DtoGeneratorRuntimeBundle`, which registers the normalizer in the application's serializer, and `Normalizers`,
   the registration it shares with the bridge's bundle.
-
 
 [Unreleased]: https://github.com/msstc4symfony/dto-generator-bridge-runtime/compare/v1.0.0...HEAD
 [1.0.0]: https://github.com/msstc4symfony/dto-generator-bridge-runtime/releases/tag/v1.0.0
