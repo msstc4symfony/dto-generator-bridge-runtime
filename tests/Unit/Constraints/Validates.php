@@ -27,13 +27,14 @@ trait Validates
      * PHP 8.5 deprecates, so the deprecations of vendor/ are let through, as they are no fault of the constraints.
      *
      * @param object $value
+     * @param list<string>|null $groups
      */
-    private function validateMapped(ValidatorInterface $validator, $value): ConstraintViolationListInterface
+    private function validateMapped(ValidatorInterface $validator, $value, ?array $groups = null): ConstraintViolationListInterface
     {
         set_error_handler(static fn (int $level, string $message, string $file): bool => strpos($file, DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR) !== false, E_DEPRECATED | E_USER_DEPRECATED);
 
         try {
-            return $validator->validate($value);
+            return $validator->validate($value, null, $groups);
         } finally {
             restore_error_handler();
         }

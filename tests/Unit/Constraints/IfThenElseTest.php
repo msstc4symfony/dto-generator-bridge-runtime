@@ -129,8 +129,10 @@ final class IfThenElseTest extends TestCase
      */
     public function testChecksTheGroupOfTheClass(): void
     {
-        self::assertSame(['zip: This field is missing.'], $this->messages($this->mappedValidator()->validate(new Shipment('US', null), null, ['Shipment'])));
-        self::assertSame(['zip: This value is not valid.'], $this->messages($this->mappedValidator()->validate(new Shipment('US', 'abc'), null, ['Shipment'])));
+        $validator = $this->mappedValidator();
+
+        self::assertSame(['zip: This field is missing.'], $this->messages($this->validateMapped($validator, new Shipment('US', null), ['Shipment'])));
+        self::assertSame(['zip: This value is not valid.'], $this->messages($this->validateMapped($validator, new Shipment('US', 'abc'), ['Shipment'])));
     }
 
     /**
