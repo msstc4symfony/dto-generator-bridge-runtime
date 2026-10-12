@@ -6,6 +6,7 @@ parameters:
     phpVersion: 80400
     paths:
         - src/AdditionalPropertiesNormalizer.php
+        - src/Constraints
         - src/Bundle
         - tests/Unit
         - tests/Fixture

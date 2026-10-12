@@ -13,7 +13,8 @@
         "openapi",
         "dto",
         "symfony",
-        "serializer"
+        "serializer",
+        "validator"
     ],
     "minimum-stability": "stable",
     "prefer-stable": true,
@@ -22,6 +23,7 @@
     },
     "require-dev": {
         "deptrac/deptrac": "^4.6",
+        "doctrine/annotations": "^1.13 || ^2.0",
         "friendsofphp/php-cs-fixer": "^3.55",
         "infection/infection": "^0.29 || ^0.32",
         "phpdocumentor/reflection-docblock": "^5.6",
@@ -37,11 +39,13 @@
         "symfony/framework-bundle": "^5.4|^6.4|^7.4|^8.0",
         "symfony/property-access": "^5.4|^6.4|^7.4|^8.0",
         "symfony/property-info": "^5.4|^6.4|^7.4|^8.0",
-        "symfony/serializer": "^5.4|^6.4|^7.4|^8.0"
+        "symfony/serializer": "^5.4|^6.4|^7.4|^8.0",
+        "symfony/validator": "^5.4|^6.4|^7.4|^8.0"
     },
     "suggest": {
         "symfony/serializer": "The normalizer of $additionalProperties is a Serializer normalizer",
-        "symfony/framework-bundle": "To register it with DtoGeneratorRuntimeBundle, which needs symfony/http-kernel and symfony/dependency-injection"
+        "symfony/framework-bundle": "To register it with DtoGeneratorRuntimeBundle, which needs symfony/http-kernel and symfony/dependency-injection",
+        "symfony/validator": "The constraints for dependentRequired, propertyNames and contains are Validator constraints"
     },
     "conflict": {
         "symfony/config": "<5.4",
@@ -49,7 +53,8 @@
         "symfony/framework-bundle": "<5.4",
         "symfony/http-kernel": "<5.4",
         "symfony/serializer": "<5.4",
-        "symfony/symfony": "*"
+        "symfony/symfony": "*",
+        "symfony/validator": "<5.4"
     },
     "autoload": {
         "psr-4": {

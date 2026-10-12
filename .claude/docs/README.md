@@ -25,3 +25,12 @@
 - Тесты бандла с ядром Symfony — `tests/Integration` (`@coversNothing`: загрузка ядра дольше таймаута Infection);
   те же места покрыты юнит-тестами на голом `ContainerBuilder`.
 - `bundle-standard` требует `extra.symfony.require` (значение не проверяет): `^5.4|^6.4|^7.0|^8.0`.
+
+## Constraints (1.1, 2026-10-12 UTC)
+
+- `src/Constraints`: `DependentRequired` (класс), `Keys`, `Contains` (`Composite`) + валидаторы; PHP 7.4 + Symfony 5.4–8. В `phpstan.dist.neon` исключены (baseline `excludePaths`), анализируются `phpstan-symfony.neon`; `Attribute` разрешён в `src/Constraints/*` (`phpstan-php74.neon`).
+- Ловушки Rector (шаблон стандарта, менять нельзя): параметр `$payload` получил бы нативный `mixed` (ParamTypeByParentCallTypeRector) — конструкторы без `payload`; `protected static $errorNames` → `private static array` (ломает 5.4) — его нет, имена ошибок только с 6.1. `@param mixed $value` у `validate()` Rector удаляет, PHPStan требует тип — используется `@phpstan-param mixed`. Строки FQCN Rector превращает в `::class` — имена загрузчиков валидатора в тестах собираются конкатенацией (`Validates::loader()`).
+- `ContainsValidator` пишет нарушение в контекст, взятый в начале `validate()`: на 5.4 вложенный `Contains` переинициализирует общий экземпляр валидатора (на 7.4+ контекст восстанавливает `validateInContext`) — восстановление `$this->context` было бы эквивалентным мутантом на 8.
+- `DependentRequiredValidator` читает `(array)`-приведение (без `setAccessible`, устаревшего в 8.5): точные ключи `\0Class\0name` по иерархии, `\0*\0name`, `name`; неинициализированное (есть `property_exists`) — не задано.
+- Сообщения с `word:` в начале переводчик Symfony принимает за метку plural-формы — в тестах сообщения без двоеточия после первого слова.
+- `AnnotationsTest` — Doctrine `AnnotationLoader` (Symfony < 7); CI-задание PHP 7.4 ставит `doctrine/annotations:^1.13` и гоняет `tests/Unit/Constraints`.
