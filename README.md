@@ -147,7 +147,8 @@ its class name.
 
 `Keys`, `Contains` and `PatternProperty` take arrays only, `DependentRequired`, `Property` and `Present` objects only;
 another value gets a `Type` violation. `Keys`, `Contains`, `PatternProperty`, `IfThenElse` and `Property` are composite
-constraints: the nested ones take their groups, as in `All`. Error names (`getErrorName()`) need Symfony 6.1 or later. The
+constraints: the nested ones take their groups, as in `All`; like `All`, they report a nested violation once for each
+of several groups validated at once (`validate($dto, null, ['api', 'Default'])`). Error names (`getErrorName()`) need Symfony 6.1 or later. The
 constructors take no `payload`.
 
 ## Development

@@ -20,7 +20,7 @@ final class PropertyKey
 
     /**
      * @param array<array-key, mixed> $values the object as an array: "\0Class\0name" for a private property of Class,
-     *                                        "\0*\0name" for a protected one
+     *                                        "\0*\0name" for a protected one; mixed, as properties hold anything
      *
      * @return string|null null when the property is uninitialized
      *
@@ -33,7 +33,10 @@ final class PropertyKey
             $classes[] = $class;
         }
 
-        $keys = array_merge(array_map(static fn (string $class): string => "\0" . $class . "\0" . $property, $classes), ["\0*\0" . $property, $property]);
+        // A protected or public property excludes a private one of the same name in the class, not in a parent: the
+        // parents' private ones come last, nearest first.
+        $private = array_map(static fn (string $class): string => "\0" . $class . "\0" . $property, $classes);
+        $keys = array_merge(["\0*\0" . $property, $property], $private);
         foreach ($keys as $key) {
             if (array_key_exists($key, $values)) {
                 return $key;

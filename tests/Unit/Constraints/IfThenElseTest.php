@@ -122,6 +122,18 @@ final class IfThenElseTest extends TestCase
     }
 
     /**
+     * The group named after the class, which a group sequence of the class validates, reaches the constraints inside
+     * Property through Composite::addImplicitGroupName(), which getNestedConstraints() does not feed.
+     *
+     * @requires PHP 8.1
+     */
+    public function testChecksTheGroupOfTheClass(): void
+    {
+        self::assertSame(['zip: This field is missing.'], $this->messages($this->mappedValidator()->validate(new Shipment('US', null), null, ['Shipment'])));
+        self::assertSame(['zip: This value is not valid.'], $this->messages($this->mappedValidator()->validate(new Shipment('US', 'abc'), null, ['Shipment'])));
+    }
+
+    /**
      * @requires PHP 8.1
      */
     public function testIsReadFromTheClassAndPropertyAttributes(): void

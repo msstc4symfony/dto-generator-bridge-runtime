@@ -26,7 +26,7 @@ final class IfThenElseValidator extends ConstraintValidator
             return;
         }
 
-        // Checking "if" re-initializes this validator when it holds IfThenElse too (Symfony before 7.4 shares one
+        // Checking "if" re-initializes this validator when it holds IfThenElse too (Symfony before 8.1 shares one
         // instance), so the branch is checked in the context taken here.
         $context = $this->context;
         [$if, $then, $else] = $constraint->branches;

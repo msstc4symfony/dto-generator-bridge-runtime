@@ -6,6 +6,7 @@ namespace Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Unit\Constraints;
 
 use Msstc4Symfony\DtoGeneratorBridge\Runtime\Constraints\Present;
 use Msstc4Symfony\DtoGeneratorBridge\Runtime\Constraints\PresentValidator;
+use Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Fixture\Override;
 use Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Fixture\Payment;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
@@ -40,6 +41,12 @@ final class PresentTest extends TestCase
         $payment = (new ReflectionClass(Payment::class))->newInstanceWithoutConstructor();
 
         self::assertSame(['amount: This field is missing.'], $this->violations($payment, new Present(['amount'])));
+    }
+
+    public function testReadsThePublicPropertyOfTheClassBeforeAPrivateOneOfTheParent(): void
+    {
+        self::assertSame(['amount: This field is missing.'], $this->violations(new Override(null, 5), new Present(['amount'])));
+        self::assertSame([], $this->violations(new Override(5, null), new Present(['amount'])));
     }
 
     public function testTakesTheMessage(): void

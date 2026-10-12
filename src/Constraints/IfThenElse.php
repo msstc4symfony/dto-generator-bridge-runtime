@@ -23,6 +23,8 @@ use Symfony\Component\Validator\Exception\ConstraintDefinitionException;
 final class IfThenElse extends Composite
 {
     /**
+     * @internal for IfThenElseValidator
+     *
      * @var array{Conjunction, Conjunction, Conjunction} if, then and else
      */
     public array $branches;

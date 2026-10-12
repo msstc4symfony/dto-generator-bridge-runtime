@@ -33,8 +33,8 @@ final class Present extends Constraint
     public string $message = 'This field is missing.';
 
     /**
-     * @param array<array-key, mixed> $properties PHP property names; checked here, as annotations and attributes are not
-     *                                            type-checked
+     * @param array<array-key, mixed> $properties PHP property names; mixed and checked here, as annotations and
+     *                                            attributes are not type-checked
      * @param list<string>|null $groups
      */
     public function __construct(array $properties, ?string $message = null, ?array $groups = null)
