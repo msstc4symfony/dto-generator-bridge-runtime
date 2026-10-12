@@ -11,6 +11,12 @@ use Symfony\Component\Validator\Constraints as Assert;
  * The constraints as annotations, which the generator writes for PHP 7.4.
  *
  * @RuntimeAssert\DependentRequired(requirements={"card"={"holder"}})
+ *
+ * @RuntimeAssert\IfThenElse(
+ *     if={@RuntimeAssert\Property(name="card", constraints={@Assert\IdenticalTo(value="4242")})},
+ *     then={@RuntimeAssert\Present(properties={"holder"})},
+ *     else={@RuntimeAssert\Property(name="holder", constraints={@Assert\Length(max=2)})}
+ * )
  */
 final class Annotated
 {
@@ -29,6 +35,8 @@ final class Annotated
      * @var array<string, int>
      *
      * @RuntimeAssert\Keys(constraints={@Assert\Length(max=3)})
+     *
+     * @RuntimeAssert\PatternProperty(pattern="/^a/", constraints={@Assert\LessThanOrEqual(value=1)})
      */
     private array $extra;
 
