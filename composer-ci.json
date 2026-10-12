@@ -40,6 +40,7 @@
         "symfony/property-access": "^5.4|^6.4|^7.4|^8.0",
         "symfony/property-info": "^5.4|^6.4|^7.4|^8.0",
         "symfony/serializer": "^5.4|^6.4|^7.4|^8.0",
+        "symfony/translation-contracts": "^2.5.3 || ^3.5",
         "symfony/validator": "^5.4|^6.4|^7.4|^8.0"
     },
     "suggest": {
