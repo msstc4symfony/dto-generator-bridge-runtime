@@ -64,6 +64,11 @@ final class Contains extends Composite
         $this->minMessage = $minMessage ?? $this->minMessage;
         $this->maxMessage = $maxMessage ?? $this->maxMessage;
         parent::__construct(null, $groups);
+        foreach ($this->constraints as $nested) {
+            if (array_diff($this->groups ?? [], $nested->groups ?? []) !== []) {
+                throw new ConstraintDefinitionException('The constraints inside Contains must be in all of its groups, or an element would match on part of them.');
+            }
+        }
     }
 
     protected function getCompositeOption(): string

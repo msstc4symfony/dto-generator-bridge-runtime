@@ -23,6 +23,7 @@
     },
     "require-dev": {
         "deptrac/deptrac": "^4.6",
+        "doctrine/annotations": "^1.13 || ^2.0",
         "friendsofphp/php-cs-fixer": "^3.55",
         "infection/infection": "^0.29 || ^0.32",
         "phpdocumentor/reflection-docblock": "^5.6",

@@ -6,9 +6,9 @@ namespace Msstc4Symfony\DtoGeneratorBridge\Runtime\Constraints;
 
 use Symfony\Component\Validator\Constraint;
 use Symfony\Component\Validator\ConstraintValidator;
+use Symfony\Component\Validator\Context\ExecutionContextInterface;
 use Symfony\Component\Validator\Exception\UnexpectedTypeException;
 use Symfony\Component\Validator\Exception\UnexpectedValueException;
-use Traversable;
 
 /**
  * @api
@@ -28,15 +28,18 @@ final class ContainsValidator extends ConstraintValidator
             return;
         }
 
-        if (!is_array($value) && !$value instanceof Traversable) {
-            throw new UnexpectedValueException($value, 'iterable');
+        if (!is_array($value)) {
+            throw new UnexpectedValueException($value, 'array');
         }
 
-        $count = $this->matching($value, $constraint);
+        // The elements' validation re-initializes this validator when they hold Contains too (Symfony before 7.4 shares
+        // one instance), so the violations go to the context taken here.
+        $context = $this->context;
+        $count = $this->matching($value, $constraint, $context);
         if ($count < $constraint->min) {
-            $this->report($value, $constraint->minMessage, $count, $constraint->min, Contains::TOO_FEW_ERROR);
+            $this->report($context, $value, $constraint->minMessage, $count, $constraint->min, Contains::TOO_FEW_ERROR);
         } elseif ($constraint->max !== null && $count > $constraint->max) {
-            $this->report($value, $constraint->maxMessage, $count, $constraint->max, Contains::TOO_MANY_ERROR);
+            $this->report($context, $value, $constraint->maxMessage, $count, $constraint->max, Contains::TOO_MANY_ERROR);
         }
     }
 
@@ -44,12 +47,12 @@ final class ContainsValidator extends ConstraintValidator
      * An element matches when a validation of its own, apart from the context, finds nothing: its violations are no
      * violations of the list.
      *
-     * @param iterable<mixed> $value
+     * @param array<array-key, mixed> $value
      */
-    private function matching(iterable $value, Contains $constraint): int
+    private function matching(array $value, Contains $constraint, ExecutionContextInterface $context): int
     {
-        $validator = $this->context->getValidator();
-        $group = $this->context->getGroup();
+        $validator = $context->getValidator();
+        $group = $context->getGroup();
         $count = 0;
         foreach ($value as $element) {
             if (count($validator->validate($element, $constraint->constraints, $group)) === 0) {
@@ -61,11 +64,11 @@ final class ContainsValidator extends ConstraintValidator
     }
 
     /**
-     * @param iterable<mixed> $value
+     * @param array<array-key, mixed> $value
      */
-    private function report(iterable $value, string $message, int $count, int $limit, string $code): void
+    private function report(ExecutionContextInterface $context, array $value, string $message, int $count, int $limit, string $code): void
     {
-        $this->context->buildViolation($message)
+        $context->buildViolation($message)
             ->setParameter('{{ count }}', (string) $count)
             ->setParameter('{{ limit }}', (string) $limit)
             ->setInvalidValue($value)

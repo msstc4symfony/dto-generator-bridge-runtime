@@ -6,6 +6,7 @@ namespace Msstc4Symfony\DtoGeneratorBridge\Runtime\Constraints;
 
 use Attribute;
 use Symfony\Component\Validator\Constraint;
+use Symfony\Component\Validator\Exception\ConstraintDefinitionException;
 
 /**
  * JSON Schema's dependentRequired on a generated class: each property listed in $requirements, once set, needs the
@@ -24,6 +25,8 @@ final class DependentRequired extends Constraint
 
     protected const ERROR_NAMES = [self::MISSING_ERROR => 'MISSING_ERROR'];
 
+    private const MALFORMED = 'DependentRequired maps PHP property names to lists of the names they need.';
+
     /**
      * @var array<string, list<string>> PHP property name => the PHP names of the properties it needs
      */
@@ -32,14 +35,41 @@ final class DependentRequired extends Constraint
     public string $message = 'This value should not be null when {{ property }} is set.';
 
     /**
-     * @param array<string, list<string>> $requirements PHP property name => the PHP names of the properties it needs
+     * @param array<array-key, mixed> $requirements PHP property name => the PHP names of the properties it needs; checked
+     *                                              here, as annotations and attributes are not type-checked
      * @param list<string>|null $groups
      */
     public function __construct(array $requirements, ?string $message = null, ?array $groups = null)
     {
         parent::__construct(null, $groups);
-        $this->requirements = $requirements;
+        $this->requirements = $this->checked($requirements);
         $this->message = $message ?? $this->message;
+    }
+
+    /**
+     * @param array<array-key, mixed> $requirements
+     *
+     * @return array<string, list<string>>
+     */
+    private function checked(array $requirements): array
+    {
+        $checked = [];
+        foreach ($requirements as $property => $dependents) {
+            if (!is_string($property) || !is_array($dependents) || array_values($dependents) !== $dependents) {
+                throw new ConstraintDefinitionException(self::MALFORMED);
+            }
+
+            $checked[$property] = [];
+            foreach ($dependents as $dependent) {
+                if (!is_string($dependent)) {
+                    throw new ConstraintDefinitionException(self::MALFORMED);
+                }
+
+                $checked[$property][] = $dependent;
+            }
+        }
+
+        return $checked;
     }
 
     public function getTargets(): string

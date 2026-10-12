@@ -70,6 +70,6 @@ jobs:
           php-version: '7.4'
           coverage: none
           tools: composer:v2
-      - run: composer require --dev --no-interaction --no-progress symfony/config:^5.4 symfony/dependency-injection:^5.4 symfony/http-kernel:^5.4 symfony/validator:^5.4
+      - run: composer require --dev --no-interaction --no-progress symfony/config:^5.4 symfony/dependency-injection:^5.4 symfony/http-kernel:^5.4 symfony/validator:^5.4 doctrine/annotations:^1.13
       - run: vendor/bin/phpunit tests/Unit/Bundle
       - run: vendor/bin/phpunit tests/Unit/Constraints

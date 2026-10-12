@@ -75,9 +75,25 @@ final class ContainsTest extends TestCase
         self::assertSame(['Too many (1 of 0).'], $this->violations(['a'], new Contains([], 0, 0, null, 'Too many ({{ count }} of {{ limit }}).')));
     }
 
-    public function testChecksATraversable(): void
+    public function testReportsATraversable(): void
     {
-        self::assertSame([], $this->violations(new ArrayIterator(['admin']), new Contains([new IdenticalTo('admin')])));
+        self::assertSame(['This value should be of type array.'], $this->violations(new ArrayIterator(['admin']), new Contains([new IdenticalTo('admin')])));
+    }
+
+    public function testReportsOnTheListWhenItsElementsHoldContains(): void
+    {
+        $constraint = new Contains([new Contains([new IdenticalTo(1)])]);
+
+        self::assertSame(['This collection should contain 1 matching element or more.'], $this->violations([[2], [3]], $constraint));
+        self::assertSame([], $this->violations([[2], [1]], $constraint));
+    }
+
+    public function testRejectsNestedConstraintsOfOtherGroups(): void
+    {
+        $this->expectException(ConstraintDefinitionException::class);
+        $this->expectExceptionMessage('The constraints inside Contains must be in all of its groups, or an element would match on part of them.');
+
+        new Contains([new IdenticalTo('admin', null, null, ['a']), new IdenticalTo('owner', null, null, ['b'])], 1, null, null, null, ['a', 'b']);
     }
 
     public function testChecksTheElementsInTheGroupBeingValidated(): void
@@ -93,9 +109,9 @@ final class ContainsTest extends TestCase
         self::assertSame([], $this->violations(null, new Contains([new IdenticalTo('admin')])));
     }
 
-    public function testReportsAValueThatIsNotIterable(): void
+    public function testReportsAValueThatIsNotAnArray(): void
     {
-        self::assertSame(['This value should be of type iterable.'], $this->violations('admin', new Contains([new IdenticalTo('admin')])));
+        self::assertSame(['This value should be of type array.'], $this->violations('admin', new Contains([new IdenticalTo('admin')])));
     }
 
     public function testRejectsANegativeMinimum(): void

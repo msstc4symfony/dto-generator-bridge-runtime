@@ -6,7 +6,6 @@ namespace Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Unit\Constraints;
 
 use Symfony\Component\Validator\Constraint;
 use Symfony\Component\Validator\ConstraintViolationListInterface;
-use Symfony\Component\Validator\Mapping\Loader\AttributeLoader;
 use Symfony\Component\Validator\Mapping\Loader\LoaderInterface;
 use Symfony\Component\Validator\Validation;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
@@ -27,12 +26,21 @@ trait Validates
      */
     private function mappedValidator(): ValidatorInterface
     {
-        $attributeLoader = AttributeLoader::class;
-        $class = class_exists($attributeLoader) ? $attributeLoader : 'Symfony\Component\Validator\Mapping\Loader\AnnotationLoader';
+        $class = $this->loader('AttributeLoader');
         $loader = new $class();
         self::assertInstanceOf(LoaderInterface::class, $loader);
 
         return Validation::createValidatorBuilder()->addLoader($loader)->getValidator();
+    }
+
+    /**
+     * The FQCN of a metadata loader, of AnnotationLoader when the version lacks it.
+     */
+    private function loader(string $name): string
+    {
+        $class = 'Symfony\\Component\\Validator\\Mapping\\Loader\\' . $name;
+
+        return class_exists($class) ? $class : 'Symfony\\Component\\Validator\\Mapping\\Loader\\AnnotationLoader';
     }
 
     /**

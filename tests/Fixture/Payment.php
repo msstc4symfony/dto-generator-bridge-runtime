@@ -18,9 +18,9 @@ final class Payment extends Charge
 
     private ?string $expiry;
 
-    public function __construct(?string $card, ?string $holder, ?string $expiry, ?int $amount = null)
+    public function __construct(?string $card, ?string $holder, ?string $expiry, ?int $amount = null, ?string $currency = null)
     {
-        parent::__construct($amount);
+        parent::__construct($amount, $currency);
         $this->card = $card;
         $this->holder = $holder;
         $this->expiry = $expiry;

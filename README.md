@@ -120,18 +120,22 @@ its class name.
 
 - **`DependentRequired(requirements: ['card' => ['holder', 'expiry']])`**, on a class: when `card` is set, `holder`
   and `expiry` must be too. Names are PHP property names, read from properties of any visibility, inherited ones
-  included. A property counts as set when it is not `null`: a DTO cannot tell a missing key from `null`. Each missing
-  property gets its own violation at its path: `This value should not be null when "card" is set.`
+  included (a private property of the class before one of the same name in a parent). A property counts as set when
+  it is not `null`, and an uninitialized one as not set: a DTO cannot tell a missing key from `null`. Each missing
+  property gets one violation at its path: `This value should not be null when "card" is set.` A malformed map
+  throws `ConstraintDefinitionException`.
 - **`Keys(constraints: [...])`**, on a map (`array<string, T>`): each key, as a string, passes the nested constraints,
-  reported at `[key]` with the key as the invalid value. A value that is not an array gets a `Type` violation.
+  reported at `[key]` with the key as the invalid value — the path of the value's own violations too.
 - **`Contains(constraints: [...], min: 1, max: null)`**, on a list: between `min` and `max` elements pass the nested
-  constraints, each checked on its own, so their violations do not count against the list; without constraints every
-  element matches. Too few or too many give one violation on the list
-  (`This collection should contain 1 matching element or more.`, codes `Contains::TOO_FEW_ERROR` and
-  `TOO_MANY_ERROR`). `Valid` cannot be nested, as in every composite constraint.
+  constraints; without constraints every element matches. Each element is validated on its own, as a root value:
+  its violations do not count against the list, and an `Expression` or `Callback` inside sees no object. Too few or
+  too many give one violation on the list (`This collection should contain 1 matching element or more.`, codes
+  `Contains::TOO_FEW_ERROR` and `TOO_MANY_ERROR`). The nested constraints must be in every group of `Contains`, or an
+  element would match on part of them; `Valid` cannot be nested, as in every composite constraint.
 
-`Keys` and `Contains` are composite constraints: the nested ones take their groups, as in `All`. Error names
-(`getErrorName()`) need Symfony 6.1 or later. The constructors take no `payload`.
+`Keys` and `Contains` take arrays only; another value gets a `Type` violation. They are composite constraints: the
+nested ones take their groups, as in `All`. Error names (`getErrorName()`) need Symfony 6.1 or later. The
+constructors take no `payload`.
 
 ## Development
 

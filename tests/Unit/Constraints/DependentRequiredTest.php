@@ -7,7 +7,9 @@ namespace Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Unit\Constraints;
 use Msstc4Symfony\DtoGeneratorBridge\Runtime\Constraints\DependentRequired;
 use Msstc4Symfony\DtoGeneratorBridge\Runtime\Constraints\DependentRequiredValidator;
 use Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Fixture\Payment;
+use Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Fixture\Refund;
 use PHPUnit\Framework\TestCase;
+use ReflectionClass;
 use stdClass;
 use Symfony\Component\Validator\Constraint;
 use Symfony\Component\Validator\Constraints\NotNull;
@@ -57,6 +59,63 @@ final class DependentRequiredTest extends TestCase
 
         self::assertSame(['amount: This value should not be null when "card" is set.'], $this->violations(new Payment('4242', null, null), $constraint));
         self::assertSame(['card: This value should not be null when "amount" is set.'], $this->violations(new Payment(null, null, null, 5), $constraint));
+    }
+
+    public function testReadsAProtectedPropertyOfTheParent(): void
+    {
+        $constraint = new DependentRequired(['currency' => ['card']]);
+
+        self::assertSame(['card: This value should not be null when "currency" is set.'], $this->violations(new Payment(null, null, null, null, 'EUR'), $constraint));
+        self::assertSame([], $this->violations(new Payment(null, null, null), $constraint));
+    }
+
+    public function testReadsThePrivatePropertyOfTheClassBeforeTheParentsOfTheSameName(): void
+    {
+        $constraint = new DependentRequired(['amount' => ['reason']]);
+
+        self::assertSame(['reason: This value should not be null when "amount" is set.'], $this->violations(new Refund(5, null, null), $constraint));
+        self::assertSame([], $this->violations(new Refund(null, 5, null), $constraint));
+    }
+
+    public function testTakesAnUninitializedPropertyAsNotSet(): void
+    {
+        $payment = (new ReflectionClass(Payment::class))->newInstanceWithoutConstructor();
+        self::assertSame([], $this->violations($payment, new DependentRequired(['card' => ['holder'], 'amount' => ['holder']])));
+
+        $payment->card = '4242';
+        self::assertSame(['holder: This value should not be null when "card" is set.'], $this->violations($payment, new DependentRequired(['card' => ['holder']])));
+    }
+
+    public function testReportsAMissingPropertyOnceForSeveralThatNeedIt(): void
+    {
+        self::assertSame(
+            ['holder: This value should not be null when "card" is set.'],
+            $this->violations(new Payment('4242', null, '12/30'), new DependentRequired(['card' => ['holder'], 'expiry' => ['holder']])),
+        );
+    }
+
+    /**
+     * @dataProvider malformedRequirements
+     *
+     * @param array<array-key, mixed> $requirements
+     */
+    public function testRejectsMalformedRequirements(array $requirements): void
+    {
+        $this->expectException(ConstraintDefinitionException::class);
+        $this->expectExceptionMessage('DependentRequired maps PHP property names to lists of the names they need.');
+
+        new DependentRequired($requirements);
+    }
+
+    /**
+     * @return iterable<string, array{array<array-key, mixed>}>
+     */
+    public static function malformedRequirements(): iterable
+    {
+        yield 'a list' => [['card', 'holder']];
+        yield 'a name instead of a list' => [['card' => 'holder']];
+        yield 'a map of names' => [['card' => ['a' => 'holder']]];
+        yield 'a number among the names' => [['card' => ['holder', 1]]];
     }
 
     public function testTakesTheMessage(): void
