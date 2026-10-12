@@ -11,6 +11,8 @@ All notable changes to this project are documented in this file. The format foll
 - The Validator constraints `DependentRequired`, `Keys` and `Contains`, with their validators, for the JSON Schema
   keywords `dependentRequired`, `propertyNames` and `contains` (with `minContains` and `maxContains`), which
   `msstc4symfony/dto-generator-bridge` writes. They work on PHP 7.4 and with `symfony/validator` 5.4 to 8.
+- The Validator constraints `PatternProperty` for `patternProperties`, and `IfThenElse` with `Property` and `Present`
+  for `if`, `then` and `else`, with their validators.
 
 ## [1.0.0] - 2026-10-12
 

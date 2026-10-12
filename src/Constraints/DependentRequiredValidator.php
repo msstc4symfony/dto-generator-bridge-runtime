@@ -6,7 +6,6 @@ namespace Msstc4Symfony\DtoGeneratorBridge\Runtime\Constraints;
 
 use Symfony\Component\Validator\Constraint;
 use Symfony\Component\Validator\ConstraintValidator;
-use Symfony\Component\Validator\Exception\ConstraintDefinitionException;
 use Symfony\Component\Validator\Exception\UnexpectedTypeException;
 use Symfony\Component\Validator\Exception\UnexpectedValueException;
 
@@ -32,17 +31,15 @@ final class DependentRequiredValidator extends ConstraintValidator
             throw new UnexpectedValueException($value, 'object');
         }
 
-        // The array cast reaches protected and private properties, also of parents, without
-        // ReflectionProperty::setAccessible(), which PHP 7.4 needs and PHP 8.5 deprecates.
         $values = (array) $value;
         $missing = [];
         foreach ($constraint->requirements as $property => $dependents) {
-            if (!$this->isSet($values, $property, $value)) {
+            if (!PropertyKey::isSet($values, $value, $property)) {
                 continue;
             }
 
             foreach ($dependents as $dependent) {
-                if (!in_array($dependent, $missing, true) && !$this->isSet($values, $dependent, $value)) {
+                if (!in_array($dependent, $missing, true) && !PropertyKey::isSet($values, $value, $dependent)) {
                     $missing[] = $dependent;
                     $this->context->buildViolation($constraint->message)
                         ->atPath($dependent)
@@ -54,32 +51,5 @@ final class DependentRequiredValidator extends ConstraintValidator
                 }
             }
         }
-    }
-
-    /**
-     * @param array<array-key, mixed> $values the object as an array: "\0Class\0name" for a private property of Class,
-     *                                        "\0*\0name" for a protected one; an uninitialized property is missing
-     */
-    private function isSet(array $values, string $property, object $object): bool
-    {
-        $classes = [];
-        for ($class = get_class($object); $class !== false; $class = get_parent_class($class)) {
-            $classes[] = $class;
-        }
-
-        $keys = array_merge(array_map(static fn (string $class): string => "\0" . $class . "\0" . $property, $classes), ["\0*\0" . $property, $property]);
-        foreach ($keys as $key) {
-            if (array_key_exists($key, $values)) {
-                return $values[$key] !== null;
-            }
-        }
-
-        foreach ($classes as $class) {
-            if (property_exists($class, $property)) {
-                return false;
-            }
-        }
-
-        throw new ConstraintDefinitionException(sprintf('The class "%s" has no property "%s".', get_class($object), $property));
     }
 }

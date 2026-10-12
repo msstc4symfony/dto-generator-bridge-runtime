@@ -32,7 +32,7 @@ final class ContainsValidator extends ConstraintValidator
             throw new UnexpectedValueException($value, 'array');
         }
 
-        // The elements' validation re-initializes this validator when they hold Contains too (Symfony before 7.4 shares
+        // The elements' validation re-initializes this validator when they hold Contains too (Symfony before 8.1 shares
         // one instance), so the violations go to the context taken here.
         $context = $this->context;
         $count = $this->matching($value, $constraint, $context);
