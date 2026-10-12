@@ -6,6 +6,8 @@ All notable changes to this project are documented in this file. The format foll
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-10-12
+
 ### Added
 
 - `AdditionalProperties`, `AdditionalPropertiesNormalizer` and `ClassLayout`, moved from the unreleased
@@ -14,3 +16,6 @@ All notable changes to this project are documented in this file. The format foll
 - `DtoGeneratorRuntimeBundle`, which registers the normalizer in the application's serializer, and `Normalizers`,
   the registration it shares with the bridge's bundle.
 
+
+[Unreleased]: https://github.com/msstc4symfony/dto-generator-bridge-runtime/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/msstc4symfony/dto-generator-bridge-runtime/releases/tag/v1.0.0
