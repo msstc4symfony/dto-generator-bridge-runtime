@@ -28,14 +28,14 @@ final class AnnotationsTest extends TestCase
         self::assertInstanceOf(LoaderInterface::class, $loader);
         $validator = Validation::createValidatorBuilder()->addLoader($loader)->getValidator();
 
-        self::assertSame([], $this->messages($validator->validate(new Annotated('4242', 'Ann', ['admin'], ['abc' => 1]))));
+        self::assertSame([], $this->messages($this->validateMapped($validator, new Annotated('4242', 'Ann', ['admin'], ['abc' => 1]))));
         self::assertSame(
             [
                 'holder: This value should not be null when "card" is set.',
                 'roles: This collection should contain 1 matching element or less.',
                 'extra[abcd]: This value is too long. It should have 3 characters or less.',
             ],
-            $this->messages($validator->validate(new Annotated('4242', null, ['admin', 'admin'], ['abcd' => 1]))),
+            $this->messages($this->validateMapped($validator, new Annotated('4242', null, ['admin', 'admin'], ['abcd' => 1]))),
         );
     }
 }

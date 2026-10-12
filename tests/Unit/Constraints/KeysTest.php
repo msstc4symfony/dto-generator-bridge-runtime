@@ -75,6 +75,6 @@ final class KeysTest extends TestCase
      */
     public function testIsReadFromThePropertyAttribute(): void
     {
-        self::assertSame(['extra[b]: This value is not valid.'], $this->messages($this->mappedValidator()->validate(new Catalogue(['x-a' => 1, 'b' => 2]))));
+        self::assertSame(['extra[b]: This value is not valid.'], $this->messages($this->validateMapped($this->mappedValidator(), new Catalogue(['x-a' => 1, 'b' => 2]))));
     }
 }

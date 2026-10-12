@@ -157,7 +157,7 @@ final class ContainsTest extends TestCase
     {
         self::assertSame(
             ['roles: This collection should contain 1 matching element or more.'],
-            $this->messages($this->mappedValidator()->validate(new Catalogue([], ['user']))),
+            $this->messages($this->validateMapped($this->mappedValidator(), new Catalogue([], ['user']))),
         );
     }
 }

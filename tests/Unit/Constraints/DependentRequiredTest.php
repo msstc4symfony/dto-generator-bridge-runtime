@@ -178,7 +178,7 @@ final class DependentRequiredTest extends TestCase
      */
     public function testIsReadFromTheClassAttribute(): void
     {
-        $violations = $this->mappedValidator()->validate(new Payment('4242', 'Ann', null));
+        $violations = $this->validateMapped($this->mappedValidator(), new Payment('4242', 'Ann', null));
 
         self::assertSame(['expiry: This value should not be null when "card" is set.'], array_map(
             static fn (ConstraintViolationInterface $violation): string => $violation->getPropertyPath() . ': ' . $violation->getMessage(),

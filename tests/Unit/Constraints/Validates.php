@@ -15,6 +15,30 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
  */
 trait Validates
 {
+    protected function setUp(): void
+    {
+        if (!class_exists(Validation::class)) {
+            self::markTestSkipped('symfony/validator is not installed; the CI matrix installs it.');
+        }
+    }
+
+    /**
+     * Validates through the metadata of the class: Symfony 5.4 calls ReflectionProperty::setAccessible() there, which
+     * PHP 8.5 deprecates, so the deprecations of vendor/ are let through, as they are no fault of the constraints.
+     *
+     * @param object $value
+     */
+    private function validateMapped(ValidatorInterface $validator, $value): ConstraintViolationListInterface
+    {
+        set_error_handler(static fn (int $level, string $message, string $file): bool => strpos($file, DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR) !== false, E_DEPRECATED | E_USER_DEPRECATED);
+
+        try {
+            return $validator->validate($value);
+        } finally {
+            restore_error_handler();
+        }
+    }
+
     private function validator(): ValidatorInterface
     {
         return Validation::createValidator();
