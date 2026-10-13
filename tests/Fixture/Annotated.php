@@ -22,6 +22,9 @@ final class Annotated
 {
     private ?string $card;
 
+    /**
+     * @RuntimeAssert\Not(constraints={@Assert\IdenticalTo(value="root")})
+     */
     private ?string $holder;
 
     /**
