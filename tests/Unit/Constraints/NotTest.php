@@ -31,6 +31,7 @@ final class NotTest extends TestCase
         self::assertSame(['This value is not allowed.'], $this->messages($violations));
         self::assertSame(Not::NOT_ALLOWED_ERROR, $violations->get(0)->getCode());
         self::assertSame('+123', $violations->get(0)->getInvalidValue());
+        self::assertSame(['{{ value }}' => '"+123"'], $violations->get(0)->getParameters());
         self::assertSame([], $this->violations('+1', $constraint), 'One failing constraint is enough.');
         self::assertSame([], $this->violations('123', $constraint));
     }
@@ -60,7 +61,9 @@ final class NotTest extends TestCase
 
         self::assertSame(['This value is not allowed.'], $this->violations('b', $constraint));
         self::assertSame([], $this->violations('a', $constraint));
-        self::assertSame([], $this->violations('b', new IfThenElse([new Not([new IdenticalTo('a')])], [new Length(null, 1)])));
+        $condition = new IfThenElse([new Not([new IdenticalTo('a')])], [new Length(null, null, 1)], [new Length(null, 2)]);
+        self::assertSame(['This value is too long. It should have 1 character or less.'], $this->violations('bb', $condition));
+        self::assertSame(['This value is too short. It should have 2 characters or more.'], $this->violations('a', $condition));
     }
 
     public function testSkipsNull(): void
