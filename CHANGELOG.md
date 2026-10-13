@@ -6,6 +6,11 @@ All notable changes to this project are documented in this file. The format foll
 
 ## [Unreleased]
 
+### Added
+
+- The Validator constraint `Not`, with its validator, for the JSON Schema keyword `not`: a value that passes all of
+  its constraints is a violation.
+
 ## [1.1.0] - 2026-10-13
 
 ### Added

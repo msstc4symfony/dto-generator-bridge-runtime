@@ -42,5 +42,6 @@ final class AnnotationsTest extends TestCase
             ['holder: This value is too long. It should have 2 characters or less.', 'extra[abc]: This value should be less than or equal to 1.'],
             $this->messages($this->validateMapped($validator, new Annotated('1111', 'Bob', ['admin'], ['abc' => 2]))),
         );
+        self::assertSame(['holder: This value is not allowed.'], $this->messages($this->validateMapped($validator, new Annotated('4242', 'root', ['admin'], []))));
     }
 }

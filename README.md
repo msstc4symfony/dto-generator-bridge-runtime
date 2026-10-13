@@ -139,14 +139,18 @@ its class name.
   constraints of `if` passes those of `then`, any other value those of `else`. As with `Contains`, `if` is checked on
   its own: its violations are not reported, and its constraints must be in every group of `IfThenElse`, as must
   those of the branches. Without groups it takes those of its constraints. `null` is not checked.
+- **`Not(constraints: [...])`**, on a property or a class: a value that passes every nested constraint is a
+  violation (`This value is not allowed.`, code `Not::NOT_ALLOWED_ERROR`), at the value's path; without constraints
+  every value is. The constraints are checked on their own, as `if` is, and must be in every group of `Not`. `null`
+  is not checked.
 - **`Property(name: 'zip', constraints: [...])`** and **`Present(properties: ['zip'])`**, on a class, for the branches
-  of a class's `IfThenElse`: `Property` checks the value of a property at its path and skips a missing one, like the
+  of a class's `IfThenElse` and `Not`: `Property` checks the value of a property at its path and skips a missing one, like the
   `properties` keyword; `Present` reports each missing property at its path (`This field is missing.`, code
   `Present::MISSING_ERROR`), like `required`. Both read properties as `DependentRequired` does, and a property counts
   as missing when it is `null` or uninitialized.
 
 `Keys`, `Contains` and `PatternProperty` take arrays only, `DependentRequired`, `Property` and `Present` objects only;
-another value gets a `Type` violation. `Keys`, `Contains`, `PatternProperty`, `IfThenElse` and `Property` are composite
+another value gets a `Type` violation. `Keys`, `Contains`, `PatternProperty`, `IfThenElse`, `Not` and `Property` are composite
 constraints: the nested ones take their groups, as in `All`; like `All`, they report a nested violation once for each
 of several groups validated at once (`validate($dto, null, ['api', 'Default'])`). Error names (`getErrorName()`) need Symfony 6.1 or later. The
 constructors take no `payload`.
