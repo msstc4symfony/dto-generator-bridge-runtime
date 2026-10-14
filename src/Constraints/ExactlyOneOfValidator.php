@@ -30,10 +30,18 @@ final class ExactlyOneOfValidator extends ConstraintValidator
         // shares one instance), so the violation goes to the context taken here.
         $context = $this->context;
         $passed = 0;
-        foreach ($constraint->constraints as $member) {
+        $messages = '';
+        foreach ($constraint->constraints as $index => $member) {
             // A validation of its own, apart from the context: the violations of a member are no violations of the value.
-            if (count($context->getValidator()->validate($value, $member, $context->getGroup())) === 0) {
+            $violations = $context->getValidator()->validate($value, $member, $context->getGroup());
+            if (count($violations) === 0) {
                 $passed++;
+            } elseif ($constraint->includeInternalMessages) {
+                $messages .= sprintf(' [%d] %s', $index + 1, $violations->get(0)->getMessage());
+            }
+
+            if ($passed === 2) {
+                break;
             }
         }
 
@@ -41,7 +49,7 @@ final class ExactlyOneOfValidator extends ConstraintValidator
             return;
         }
 
-        $context->buildViolation($constraint->message)
+        $context->buildViolation($constraint->message . ($passed === 0 ? $messages : ''))
             ->setParameter('{{ value }}', $this->formatValue($value))
             ->setParameter('{{ count }}', (string) $passed)
             ->setCode(ExactlyOneOf::NOT_EXACTLY_ONE_ERROR)

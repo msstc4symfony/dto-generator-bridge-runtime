@@ -147,8 +147,10 @@ its class name.
 - **`ExactlyOneOf(constraints: [...])`**, on a property or a class, for `oneOf`: the value passes exactly one of the
   constraints, each a member (several constraints of one member go into one, such as `Sequentially`); otherwise one
   violation at the value's path (`This value should satisfy exactly one of the given constraints; it satisfies 2.`,
-  `{{ count }}` the number it passes, code `ExactlyOneOf::NOT_EXACTLY_ONE_ERROR`). The members are checked on their own,
-  as `if` is, and must be in every group of `ExactlyOneOf`. `null` is not checked. For `anyOf`, Symfony's `AtLeastOneOf`
+  `{{ count }}` the number it passes, code `ExactlyOneOf::NOT_EXACTLY_ONE_ERROR`); for a value that satisfies none, the
+  first message of each member follows (`[1] …`), unless `includeInternalMessages: false`. It needs at least one
+  constraint. The members are checked on their own, as `if` is, and must be in every group of `ExactlyOneOf`. `null` is
+  not checked. For `anyOf`, Symfony's `AtLeastOneOf`
   does the same with at least one.
 - **`Property(name: 'zip', constraints: [...])`** and **`Present(properties: ['zip'])`**, on a class, for the branches
   of a class's `IfThenElse`, `Not` and `ExactlyOneOf`: `Property` checks the value of a property at its path and skips a missing one, like the

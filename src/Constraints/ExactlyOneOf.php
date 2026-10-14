@@ -33,19 +33,28 @@ final class ExactlyOneOf extends Composite
 
     public string $message = 'This value should satisfy exactly one of the given constraints; it satisfies {{ count }}.';
 
+    /** Whether the violation of a value that satisfies none lists what each constraint said, as AtLeastOneOf does. */
+    public bool $includeInternalMessages = true;
+
     /**
      * @param list<Constraint> $constraints
      * @param list<string>|null $groups those of the nested constraints when null
      */
-    public function __construct(array $constraints = [], ?string $message = null, ?array $groups = null)
+    public function __construct(array $constraints, ?string $message = null, ?array $groups = null, ?bool $includeInternalMessages = null)
     {
+        if ($constraints === []) {
+            throw new ConstraintDefinitionException('ExactlyOneOf needs at least one constraint, as oneOf needs a schema.');
+        }
+
         $this->constraints = $constraints;
         $this->message = $message ?? $this->message;
+        $this->includeInternalMessages = $includeInternalMessages ?? $this->includeInternalMessages;
         $groups ??= $this->groupsOf($constraints);
         parent::__construct(null, $groups);
         foreach ($constraints as $constraint) {
-            if (array_diff($groups, $constraint->groups ?? []) !== []) {
-                throw new ConstraintDefinitionException('The constraints inside ExactlyOneOf must be in all of its groups, or it would count part of them.');
+            $missing = array_diff($groups, $constraint->groups ?? []);
+            if ($missing !== []) {
+                throw new ConstraintDefinitionException(sprintf('The constraints inside ExactlyOneOf must be in all of its groups, or it would count part of them: %s is not in "%s".', get_class($constraint), implode('", "', $missing)));
             }
         }
     }
@@ -77,6 +86,6 @@ final class ExactlyOneOf extends Composite
             }
         }
 
-        return $groups === [] ? [self::DEFAULT_GROUP] : array_values($groups);
+        return array_values($groups);
     }
 }
