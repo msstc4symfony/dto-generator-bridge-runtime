@@ -57,11 +57,11 @@ final class ExactlyOneOfTest extends TestCase
         self::assertSame(['Default'], $constraint->groups);
     }
 
-    public function testStopsCountingAtTwo(): void
+    public function testCountsEveryConstraintItPasses(): void
     {
         $constraint = new ExactlyOneOf([new Length(null, null, 3), new Regex('/^[0-9]+$/'), new Regex('/^1/')]);
 
-        self::assertSame(['This value should satisfy exactly one of the given constraints; it satisfies 2.'], $this->violations('12', $constraint));
+        self::assertSame(['This value should satisfy exactly one of the given constraints; it satisfies 3.'], $this->violations('12', $constraint));
     }
 
     public function testTakesAMessage(): void

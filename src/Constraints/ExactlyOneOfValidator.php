@@ -39,10 +39,6 @@ final class ExactlyOneOfValidator extends ConstraintValidator
             } elseif ($constraint->includeInternalMessages) {
                 $messages .= sprintf(' [%d] %s', $index + 1, $violations->get(0)->getMessage());
             }
-
-            if ($passed === 2) {
-                break;
-            }
         }
 
         if ($passed === 1) {

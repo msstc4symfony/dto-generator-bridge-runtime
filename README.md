@@ -148,7 +148,8 @@ its class name.
   constraints, each a member (several constraints of one member go into one, such as `Sequentially`); otherwise one
   violation at the value's path (`This value should satisfy exactly one of the given constraints; it satisfies 2.`,
   `{{ count }}` the number it passes, code `ExactlyOneOf::NOT_EXACTLY_ONE_ERROR`); for a value that satisfies none, the
-  first message of each member follows (`[1] …`), unless `includeInternalMessages: false`. It needs at least one
+  first message of each member follows (`[1] …`), unless `includeInternalMessages: false`; as with Symfony's
+  `AtLeastOneOf`, they are appended to the translated message, not part of the template. It needs at least one
   constraint. The members are checked on their own, as `if` is, and must be in every group of `ExactlyOneOf`. `null` is
   not checked. For `anyOf`, Symfony's `AtLeastOneOf`
   does the same with at least one.
