@@ -20,6 +20,9 @@ use Symfony\Component\Validator\Constraints as Assert;
  */
 final class Annotated
 {
+    /**
+     * @RuntimeAssert\ExactlyOneOf(constraints={@Assert\Length(min=5), @Assert\Regex(pattern="/^[0-9]+$/")})
+     */
     private ?string $card;
 
     /**

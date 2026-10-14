@@ -27,7 +27,7 @@
     "suggest": {
         "symfony/serializer": "The normalizer of $additionalProperties is a Serializer normalizer",
         "symfony/framework-bundle": "To register it with DtoGeneratorRuntimeBundle, which needs symfony/http-kernel and symfony/dependency-injection",
-        "symfony/validator": "The constraints for dependentRequired, propertyNames, contains, patternProperties, if/then/else, not and dependentSchemas are Validator constraints"
+        "symfony/validator": "The constraints for dependentRequired, propertyNames, contains, patternProperties, if/then/else, not, oneOf and dependentSchemas are Validator constraints"
     },
     "conflict": {
         "symfony/config": "<5.4",

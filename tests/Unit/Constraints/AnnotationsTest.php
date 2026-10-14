@@ -43,5 +43,6 @@ final class AnnotationsTest extends TestCase
             $this->messages($this->validateMapped($validator, new Annotated('1111', 'Bob', ['admin'], ['abc' => 2]))),
         );
         self::assertSame(['holder: This value is not allowed.'], $this->messages($this->validateMapped($validator, new Annotated('4242', 'root', ['admin'], []))));
+        self::assertSame(['card: This value should satisfy exactly one of the given constraints; it satisfies 2.'], $this->messages($this->validateMapped($validator, new Annotated('12345', 'Al', ['admin'], []))));
     }
 }
