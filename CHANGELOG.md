@@ -6,6 +6,11 @@ All notable changes to this project are documented in this file. The format foll
 
 ## [Unreleased]
 
+### Added
+
+- The Validator constraint `ExactlyOneOf`, with its validator, for the JSON Schema keyword `oneOf`: the value passes
+  exactly one of its constraints; the violation says how many it passes.
+
 ## [1.2.0] - 2026-10-14
 
 ### Added
