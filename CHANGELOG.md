@@ -6,6 +6,8 @@ All notable changes to this project are documented in this file. The format foll
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-10-15
+
 ### Added
 
 - The Validator constraint `ExactlyOneOf`, with its validator, for the JSON Schema keyword `oneOf`: the value passes
@@ -38,7 +40,8 @@ All notable changes to this project are documented in this file. The format foll
 - `DtoGeneratorRuntimeBundle`, which registers the normalizer in the application's serializer, and `Normalizers`,
   the registration it shares with the bridge's bundle.
 
-[Unreleased]: https://github.com/msstc4symfony/dto-generator-bridge-runtime/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/msstc4symfony/dto-generator-bridge-runtime/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/msstc4symfony/dto-generator-bridge-runtime/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/msstc4symfony/dto-generator-bridge-runtime/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/msstc4symfony/dto-generator-bridge-runtime/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/msstc4symfony/dto-generator-bridge-runtime/releases/tag/v1.0.0
