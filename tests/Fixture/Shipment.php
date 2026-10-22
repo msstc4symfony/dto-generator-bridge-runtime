@@ -16,12 +16,12 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[IfThenElse(if: [new Property('country', [new Assert\IdenticalTo('US')])], then: [new Present(['zip']), new Property('zip', [new Assert\Regex('/^\d{5}$/')])], else: [new Property('zip', [new Assert\Length(max: 10)])])]
 final class Shipment
 {
+    #[IfThenElse(if: [new Assert\Regex('/^\+/')], then: [new Assert\Length(min: 8)], else: [new Assert\Length(max: 6)])]
+    public ?string $phone;
+
     private ?string $country;
 
     private ?string $zip;
-
-    #[IfThenElse(if: [new Assert\Regex('/^\+/')], then: [new Assert\Length(min: 8)], else: [new Assert\Length(max: 6)])]
-    public ?string $phone;
 
     /**
      * @var array<string, string>

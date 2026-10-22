@@ -46,6 +46,11 @@ final class DependentRequired extends Constraint
         $this->message = $message ?? $this->message;
     }
 
+    public function getTargets(): string
+    {
+        return self::CLASS_CONSTRAINT;
+    }
+
     /**
      * @param array<array-key, mixed> $requirements
      *
@@ -70,10 +75,5 @@ final class DependentRequired extends Constraint
         }
 
         return $checked;
-    }
-
-    public function getTargets(): string
-    {
-        return self::CLASS_CONSTRAINT;
     }
 }
