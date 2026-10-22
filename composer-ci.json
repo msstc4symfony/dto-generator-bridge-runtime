@@ -41,7 +41,8 @@
         "symfony/property-info": "^5.4|^6.4|^7.4|^8.0",
         "symfony/serializer": "^5.4|^6.4|^7.4|^8.0",
         "symfony/translation-contracts": "^2.5.3 || ^3.5",
-        "symfony/validator": "^5.4|^6.4|^7.4|^8.0"
+        "symfony/validator": "^5.4|^6.4|^7.4|^8.0",
+        "webmozart/assert": "^1.11 || ^2.0"
     },
     "suggest": {
         "symfony/serializer": "The normalizer of $additionalProperties is a Serializer normalizer",
