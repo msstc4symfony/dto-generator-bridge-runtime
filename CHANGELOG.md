@@ -6,6 +6,13 @@ All notable changes to this project are documented in this file. The format foll
 
 ## [Unreleased]
 
+### Added
+
+- `CollectionNormalizer`, registered by `DtoGeneratorRuntimeBundle`: reads a list into the collection object a
+  generated DTO declares (dto-generator's `dto.collections`) and writes it back as the list. The property's Context
+  names the class and the Serializer type of its items under `dto_generator_collection`; the class is built through
+  `fromArray()` or its constructor and read through `toArray()` or iteration.
+
 ## [1.3.0] - 2026-10-15
 
 ### Added

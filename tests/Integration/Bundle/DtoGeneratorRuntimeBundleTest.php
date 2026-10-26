@@ -7,12 +7,14 @@ namespace Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Integration\Bundle;
 use FilesystemIterator;
 use Msstc4Symfony\DtoGeneratorBridge\Runtime\AdditionalPropertiesNormalizer;
 use Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Fixture\Box;
+use Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Fixture\Collection\Basket;
 use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use SplFileInfo;
 use Symfony\Bundle\FrameworkBundle\FrameworkBundle;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Component\Serializer\Attribute\Context;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 
@@ -90,6 +92,24 @@ final class DtoGeneratorRuntimeBundleTest extends TestCase
         $box = $serializer->denormalize(['apples' => 2], Box::class);
         self::assertInstanceOf(Box::class, $box);
         self::assertSame(['apples' => 2], $box->getExtra());
+    }
+
+    /**
+     * @requires PHP 8.0
+     */
+    public function testReadsCollectionsInTheApplicationsSerializer(): void
+    {
+        if (!class_exists(Context::class)) {
+            self::markTestSkipped('The fixture needs the attributes of symfony/serializer 6.4 or newer.');
+        }
+
+        $serializer = $this->service($this->bootedKernel(['serializer' => ['enabled' => true], 'property_info' => ['enabled' => true]]), 'serializer');
+
+        self::assertInstanceOf(DenormalizerInterface::class, $serializer);
+        self::assertInstanceOf(NormalizerInterface::class, $serializer);
+        $basket = $serializer->denormalize(['tags' => [['name' => 'red']], 'prices' => [2]], Basket::class);
+        self::assertInstanceOf(Basket::class, $basket);
+        self::assertSame(['tags' => [['name' => 'red']], 'prices' => [2.0]], $serializer->normalize($basket));
     }
 
     public function testRegistersNoNormalizerWithoutTheObjectNormalizer(): void
