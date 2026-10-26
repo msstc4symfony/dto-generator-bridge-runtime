@@ -111,6 +111,14 @@ final class CollectionNormalizerTest extends TestCase
         }
     }
 
+    public function testPassesItemsOfTypeMixedThrough(): void
+    {
+        $numbers = $this->serializer->denormalize([1, 'two', [3]], Numbers::class, null, ['dto_generator_collection' => ['class' => Numbers::class, 'item' => 'mixed']]);
+
+        self::assertInstanceOf(Numbers::class, $numbers);
+        self::assertSame([1, 'two', [3]], iterator_to_array($numbers, false));
+    }
+
     public function testClaimsOnlyTheClassItsContextNames(): void
     {
         $context = ['dto_generator_collection' => ['class' => TagList::class, 'item' => Tag::class]];

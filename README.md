@@ -120,7 +120,7 @@ bridge writes the property's `#[Context]` with the key `dto_generator_collection
 Tag::class}`, and `CollectionNormalizer` (registered by the bundle) uses it:
 
 - **Reading:** the data must be a list; each item goes through the Serializer as `item` (a DTO, an enum, a date), or
-  is checked as `int`, `float` (an int becomes a float), `string` or `bool`. The collection comes from a public
+  is checked as `int`, `float` (an int becomes a float), `string` or `bool`; `mixed` takes it as it is. The collection comes from a public
   static `fromArray(array)` when the class has one, otherwise from `new Class(array)`. A map, a scalar or a wrong item
   is a `NotNormalizableValueException` with the item's path (`tags[2]`), so `COLLECT_DENORMALIZATION_ERRORS` reports
   it like any other.

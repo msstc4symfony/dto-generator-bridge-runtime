@@ -28,7 +28,7 @@ use Traversable;
  */
 final class CollectionNormalizer implements NormalizerInterface, DenormalizerInterface, SerializerAwareInterface
 {
-    /** The context key: {class: the collection class, item: the Serializer type of an item, such as App\Tag or int}. */
+    /** The context key: {class: the collection class, item: the Serializer type of an item, such as App\Tag, int or mixed}. */
     public const CONTEXT = 'dto_generator_collection';
 
     /** Checked here: the Serializer has no normalizer for builtin types. A float takes an int, as JSON does. */
@@ -133,6 +133,11 @@ final class CollectionNormalizer implements NormalizerInterface, DenormalizerInt
      */
     private function item(mixed $value, string $item, string $type, int $index, ?string $format, array $context, ?string $path): mixed
     {
+        // An item the Serializer has no type for (a union, a list of scalars) stays as the data has it.
+        if ($item === 'mixed') {
+            return $value;
+        }
+
         $at = sprintf('%s[%d]', $path ?? '', $index);
         $check = self::SCALARS[$item] ?? null;
         if ($check === null) {
