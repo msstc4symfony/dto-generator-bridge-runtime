@@ -59,7 +59,7 @@ final class CollectionNormalizer implements NormalizerInterface, DenormalizerInt
         }
 
         unset($context[self::CONTEXT]);
-        $normalized = $this->normalizer()->normalize(array_values(is_array($elements) ? $elements : []), $format, $context);
+        $normalized = $this->normalizer()->normalize(is_array($elements) ? $elements : [], $format, $context);
 
         return is_array($normalized) ? array_values($normalized) : [];
     }

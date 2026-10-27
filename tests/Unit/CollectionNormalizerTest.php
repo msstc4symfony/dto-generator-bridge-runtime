@@ -6,8 +6,10 @@ namespace Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Unit;
 
 use Msstc4Symfony\DtoGeneratorBridge\Runtime\CollectionNormalizer;
 use Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Fixture\Collection\Basket;
+use Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Fixture\Collection\Keyed;
 use Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Fixture\Collection\Numbers;
 use Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Fixture\Collection\Opaque;
+use Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Fixture\Collection\Repeated;
 use Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Fixture\Collection\Tag;
 use Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Fixture\Collection\TagList;
 use PHPUnit\Framework\TestCase;
@@ -100,6 +102,24 @@ final class CollectionNormalizerTest extends TestCase
         ];
     }
 
+    public function testWritesEveryItemOfACollectionWhateverItsKeys(): void
+    {
+        self::assertSame([2, 1], $this->serializer->normalize(new Keyed(['b' => 2, 'a' => 1]), null, ['dto_generator_collection' => ['class' => Keyed::class, 'item' => 'int']]));
+        self::assertSame([1, 2], $this->serializer->normalize(new Repeated([1, 2]), null, ['dto_generator_collection' => ['class' => Repeated::class, 'item' => 'int']]));
+    }
+
+    public function testReportsDataThatIsNoListToTheUser(): void
+    {
+        try {
+            $this->serializer->denormalize(['tags' => [], 'prices' => '1.5'], Basket::class);
+            self::fail('A string is no list.');
+        } catch (NotNormalizableValueException $exception) {
+            self::assertSame('prices', $exception->getPath());
+            self::assertSame(['array'], $exception->getExpectedTypes());
+            self::assertTrue($exception->canUseMessageForUser());
+        }
+    }
+
     public function testReportsWhereAnItemIsWrong(): void
     {
         try {
@@ -108,7 +128,44 @@ final class CollectionNormalizerTest extends TestCase
         } catch (NotNormalizableValueException $exception) {
             self::assertSame('prices[0]', $exception->getPath());
             self::assertSame(['float'], $exception->getExpectedTypes());
+            self::assertTrue($exception->canUseMessageForUser());
         }
+    }
+
+    public function testReportsWhereAPropertyOfAnItemIsWrong(): void
+    {
+        try {
+            $this->serializer->denormalize(['tags' => [['name' => 'red'], ['name' => ['x']]]], Basket::class);
+            self::fail('A list is no string.');
+        } catch (NotNormalizableValueException $exception) {
+            self::assertSame('tags[1].name', $exception->getPath());
+        }
+    }
+
+    /**
+     * @dataProvider wrongItems
+     */
+    public function testNamesTheTypeOfAWrongItem(mixed $item, string $given): void
+    {
+        $this->expectException(NotNormalizableValueException::class);
+        $this->expectExceptionMessage('Item 0 of ' . Numbers::class . ' must be string, ' . $given . ' given.');
+
+        $this->serializer->denormalize([$item], Numbers::class, null, ['dto_generator_collection' => ['class' => Numbers::class, 'item' => 'string']]);
+    }
+
+    /**
+     * @return array<string, array{mixed, string}>
+     */
+    public static function wrongItems(): array
+    {
+        return [
+            'bool' => [true, 'bool'],
+            'int' => [1, 'int'],
+            'float' => [1.5, 'float'],
+            'null' => [null, 'null'],
+            'array' => [[1], 'array'],
+            'object' => [new Tag('red'), Tag::class],
+        ];
     }
 
     public function testPassesItemsOfTypeMixedThrough(): void
@@ -127,6 +184,9 @@ final class CollectionNormalizerTest extends TestCase
         self::assertFalse($this->normalizer->supportsDenormalization([], Numbers::class, null, $context));
         self::assertFalse($this->normalizer->supportsDenormalization([], TagList::class));
         self::assertFalse($this->normalizer->supportsDenormalization([], TagList::class, null, ['dto_generator_collection' => 'x']));
+        self::assertFalse($this->normalizer->supportsDenormalization([], TagList::class, null, ['dto_generator_collection' => ['class' => 1, 'item' => Tag::class]]));
+        self::assertFalse($this->normalizer->supportsDenormalization([], TagList::class, null, ['dto_generator_collection' => ['class' => TagList::class, 'item' => 1]]));
+        self::assertFalse($this->normalizer->supportsDenormalization([], 'App\\Missing', null, ['dto_generator_collection' => ['class' => 'App\\Missing', 'item' => Tag::class]]));
         self::assertTrue($this->normalizer->supportsNormalization(TagList::fromArray([]), null, $context));
         self::assertFalse($this->normalizer->supportsNormalization(new Numbers([]), null, $context));
         self::assertFalse($this->normalizer->supportsNormalization([], null, $context));
