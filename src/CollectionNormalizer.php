@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Msstc4Symfony\DtoGeneratorBridge\Runtime;
 
 use Closure;
-use Error;
 use ReflectionClass;
 use ReflectionMethod;
 use Symfony\Component\Serializer\Exception\InvalidArgumentException;
@@ -51,6 +50,9 @@ final class CollectionNormalizer implements NormalizerInterface, DenormalizerInt
     /** @var array<class-string, (Closure(list<mixed>): mixed)|null> how each class is built, found once */
     private array $builders = [];
 
+    /** @var array<class-string, ReflectionMethod|null> the toArray() each class is read through, found once */
+    private array $readers = [];
+
     public function setSerializer(SerializerInterface $serializer): void
     {
         $this->serializer = $serializer;
@@ -66,8 +68,8 @@ final class CollectionNormalizer implements NormalizerInterface, DenormalizerInt
      */
     public function normalize(mixed $data, ?string $format = null, array $context = []): array
     {
-        // __call makes any method callable, so the method must exist too.
-        $elements = is_object($data) && method_exists($data, 'toArray') && is_callable([$data, 'toArray']) ? $data->toArray() : $data;
+        $reader = is_object($data) ? $this->reader(get_class($data)) : null;
+        $elements = $reader instanceof ReflectionMethod ? $reader->invoke($data) : $data;
         if (!is_array($elements) && !$elements instanceof Traversable) {
             throw new InvalidArgumentException(sprintf('%s is neither readable through toArray() nor iterable.', is_object($data) ? get_class($data) : gettype($data)));
         }
@@ -181,11 +183,11 @@ final class CollectionNormalizer implements NormalizerInterface, DenormalizerInt
             throw NotNormalizableValueException::createForUnexpectedDataType(sprintf('%s has neither a public static fromArray() nor a public constructor that takes the list of items.', $class), $items, [$class], $path);
         }
 
-        // A collection that checks its items refuses them as dto-collection's do, with an InvalidArgumentException; an
-        // abstract class's factory may fail to build it.
+        // A collection that checks its items refuses them as dto-collection's do, with an InvalidArgumentException; any
+        // other failure is the class's bug, not the data's.
         try {
             $collection = $builder($items);
-        } catch (\InvalidArgumentException|Error $exception) {
+        } catch (\InvalidArgumentException $exception) {
             throw NotNormalizableValueException::createForUnexpectedDataType($exception->getMessage(), $items, [$class], $path, false, 0, $exception);
         }
 
@@ -206,7 +208,12 @@ final class CollectionNormalizer implements NormalizerInterface, DenormalizerInt
      */
     private function builder(string $class): ?Closure
     {
+        // An abstract class is no collection to build, whatever its factory would give.
         $reflection = new ReflectionClass($class);
+        if ($reflection->isAbstract()) {
+            return null;
+        }
+
         if ($reflection->hasMethod('fromArray')) {
             $factory = $reflection->getMethod('fromArray');
             if ($factory->isStatic() && $factory->isPublic() && $this->takesTheList($factory)) {
@@ -223,13 +230,29 @@ final class CollectionNormalizer implements NormalizerInterface, DenormalizerInt
     }
 
     /**
+     * The public toArray() the class is read through, called without arguments; __call makes any name callable, so the
+     * method itself is asked.
+     *
+     * @param class-string $class
+     */
+    private function reader(string $class): ?ReflectionMethod
+    {
+        if (!array_key_exists($class, $this->readers)) {
+            $method = method_exists($class, 'toArray') ? new ReflectionMethod($class, 'toArray') : null;
+            $this->readers[$class] = $method instanceof ReflectionMethod && $method->isPublic() && !$method->isStatic() && $method->getNumberOfRequiredParameters() === 0 ? $method : null;
+        }
+
+        return $this->readers[$class];
+    }
+
+    /**
      * Whether the list goes as the first argument and the only required one: a variadic parameter takes the items one by
      * one.
      */
     private function takesTheList(ReflectionMethod $method): bool
     {
         $parameters = $method->getParameters();
-        if ($parameters === [] || $parameters[0]->isVariadic() || $method->getNumberOfRequiredParameters() > 1) {
+        if ($parameters === [] || $parameters[0]->isVariadic() || $parameters[0]->isPassedByReference() || $method->getNumberOfRequiredParameters() > 1) {
             return false;
         }
 

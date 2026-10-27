@@ -57,8 +57,10 @@
   неабстрактного класса; первый параметр — список (без типа, `array`, `iterable`, `mixed`, union с ними; не variadic —
   `Tag ...$t` взял бы список целиком), остальные необязательны. Тип читается как строка `(string) $type`:
   `ReflectionUnionType` запрещён `phpstan-php74.neon`. `\InvalidArgumentException` (dto-collection `ElementTypeMismatch`)
-  и `\Error` (абстрактный `new static`) из сборки → NNVE с `previous`, `canUseMessageForUser=false`; `fromArray()`,
-  вернувший не экземпляр, → NNVE (конструктор не подставляется). Без конструктора PHP молча проглотил бы аргументы. Чтение: публичный `toArray()` (`is_callable`, массив или Traversable),
+  из сборки → NNVE с `previous`, `canUseMessageForUser=false`; прочие `\Error` — баг класса, летят как есть; абстрактный
+  класс и параметр по ссылке отвергаются при выборе стратегии; `fromArray()`,
+  вернувший не экземпляр, → NNVE (конструктор не подставляется). Без конструктора PHP молча проглотил бы аргументы. Чтение: публичный нестатический `toArray()` без обязательных параметров (`reader()`, через ReflectionMethod — `__call` и
+  приватный метод не в счёт; массив или Traversable),
   иначе `iterator_to_array($data, false)`; пустой список — `[]` до Serializer (`empty_array_as_object` дал бы
   ArrayObject); не массив от Serializer — `LogicException`.
 - `item` проверяется в `denormalize()` (скаляр, `mixed`, класс/интерфейс; `[]` — только у класса: у ArrayDenormalizer

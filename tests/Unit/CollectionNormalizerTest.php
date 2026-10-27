@@ -6,11 +6,15 @@ namespace Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Unit;
 
 use ArrayObject;
 use DateTimeImmutable;
-use Error;
+use DivisionByZeroError;
 use Msstc4Symfony\DtoGeneratorBridge\Runtime\CollectionNormalizer;
 use Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Fixture\Collection\Bare;
 use Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Fixture\Collection\Basket;
+use Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Fixture\Collection\ByReference;
+use Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Fixture\Collection\Called;
 use Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Fixture\Collection\Declining;
+use Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Fixture\Collection\Deep;
+use Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Fixture\Collection\Failing;
 use Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Fixture\Collection\Guarded;
 use Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Fixture\Collection\Hidden;
 use Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Fixture\Collection\Instanced;
@@ -257,6 +261,8 @@ final class CollectionNormalizerTest extends TestCase
             'no list parameter' => [Named::class],
             'factory of two arguments' => [Sized::class],
             'no parameters' => [Bare::class],
+            'abstract' => [Template::class],
+            'by reference' => [ByReference::class],
         ];
     }
 
@@ -365,15 +371,17 @@ final class CollectionNormalizerTest extends TestCase
         }
     }
 
-    public function testReportsAFactoryThatFailsToBuildTheClass(): void
+    public function testLeavesTheBugsOfAFactoryAlone(): void
     {
-        try {
-            $this->serializer->denormalize([1], Template::class, null, ['dto_generator_collection' => ['class' => Template::class, 'item' => 'int']]);
-            self::fail('An abstract class cannot be built.');
-        } catch (NotNormalizableValueException $exception) {
-            self::assertSame('Cannot instantiate abstract class ' . Template::class, $exception->getMessage());
-            self::assertInstanceOf(Error::class, $exception->getPrevious());
-        }
+        $this->expectException(DivisionByZeroError::class);
+
+        $this->serializer->denormalize([1], Failing::class, null, ['dto_generator_collection' => ['class' => Failing::class, 'item' => 'int']]);
+    }
+
+    public function testIteratesAClassWhoseToArrayWantsArgumentsOrIsHidden(): void
+    {
+        self::assertSame([1, 2], $this->serializer->normalize(new Deep([1, 2]), null, ['dto_generator_collection' => ['class' => Deep::class, 'item' => 'int']]));
+        self::assertSame([3], $this->serializer->normalize(new Called([3]), null, ['dto_generator_collection' => ['class' => Called::class, 'item' => 'int']]));
     }
 
     public function testRefusesAFactoryThatGivesNoCollection(): void
