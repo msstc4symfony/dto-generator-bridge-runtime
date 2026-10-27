@@ -9,6 +9,7 @@ use Msstc4Symfony\DtoGeneratorBridge\Runtime\Bundle\DependencyInjection\Compiler
 use Msstc4Symfony\DtoGeneratorBridge\Runtime\Bundle\DependencyInjection\DtoGeneratorRuntimeExtension;
 use Msstc4Symfony\DtoGeneratorBridge\Runtime\Bundle\DependencyInjection\Normalizers;
 use Msstc4Symfony\DtoGeneratorBridge\Runtime\Bundle\DtoGeneratorRuntimeBundle;
+use Msstc4Symfony\DtoGeneratorBridge\Runtime\CollectionNormalizer;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Config\Definition\Exception\InvalidConfigurationException;
 use Symfony\Component\DependencyInjection\Compiler\PassConfig;
@@ -41,6 +42,21 @@ final class DtoGeneratorRuntimeBundleTest extends TestCase
             new Reference('serializer.name_converter.metadata_aware'),
         ], $definition->getArguments());
         self::assertSame(['serializer.normalizer' => [[]]], $definition->getTags());
+    }
+
+    /**
+     * @requires PHP 8.0
+     */
+    public function testRegistersTheCollectionNormalizer(): void
+    {
+        $container = new ContainerBuilder();
+        (new DtoGeneratorRuntimeExtension())->load([], $container);
+
+        $definition = $container->getDefinition(CollectionNormalizer::class);
+        self::assertSame(CollectionNormalizer::class, $definition->getClass());
+        self::assertSame([], $definition->getArguments());
+        self::assertSame(['serializer.normalizer' => [[]]], $definition->getTags());
+        self::assertFalse($definition->isPublic());
     }
 
     /**
@@ -79,6 +95,7 @@ final class DtoGeneratorRuntimeBundleTest extends TestCase
         Normalizers::register($container);
 
         self::assertFalse($container->hasDefinition(AdditionalPropertiesNormalizer::class));
+        self::assertFalse($container->hasDefinition(CollectionNormalizer::class));
     }
 
     public function testNamesItsConfigurationDtoGeneratorRuntime(): void

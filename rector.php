@@ -101,6 +101,8 @@ return static function (RectorConfig $rectorConfig) use ($writeLowestPackagesMan
                 NewlineAfterStatementRector::class,
                 CatchExceptionNameMatchingTypeRector::class,
                 CoversAnnotationWithValueToAttributeRector::class,
+                // Fixtures have the shapes the tests need: unused parameters, hidden factories, missing constructors.
+                __DIR__ . '/tests/Fixture/Collection',
             ],
         );
 

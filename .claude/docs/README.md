@@ -25,6 +25,7 @@
 - Тесты бандла с ядром Symfony — `tests/Integration` (`@coversNothing`: загрузка ядра дольше таймаута Infection);
   те же места покрыты юнит-тестами на голом `ContainerBuilder`.
 - `bundle-standard` требует `extra.symfony.require` (значение не проверяет): `^5.4|^6.4|^7.0|^8.0`.
+- Стандарт: `checks.yml` → `@v3.1.0` (с 2026-10-22 UTC), профиль `php74`; у записей `symfony-versions` поле `php` (8.2, у Symfony 8 — 8.4) отсекает невозможные ячейки матрицы PHPUnit.
 
 ## Constraints (1.1, 2026-10-12 UTC)
 
@@ -41,3 +42,40 @@
 - Symfony 8.1 объявил устаревшими `ConstraintValidatorInterface::validate()`/`initialize()` в пользу `validateInContext()`. Проверено 2026-10-13 UTC на 8.1.8: базовый `ConstraintValidator::validateInContext()` ставит контекст и вызывает наш `validate()` (в базовом классе он абстрактный, не устаревший); предупреждение есть только при переопределении `initialize()`, которого у нас нет. Менять нечего до Symfony 9 — там, вероятно, придётся реализовать `validateInContext()` (и тогда контекст можно брать из параметра, а не захватывать).
 - `PropertyKey::find()`: сначала protected и public (они исключают приватное свойство того же имени в самом классе, но не у родителя), затем приватные — от класса к родителям (ревью G2, CR-014).
 - `Not` (как `if` у `IfThenElse`) считает значение подходящим, если вложенные не дали нарушений; constraint Symfony на значении чужого типа даёт нарушение (`Length` на массиве), и `not` тогда молчит. Мост пишет `not` только из подсхем, где слова одного вида стоят при известном скалярном типе или при `Type` (`Subschema`), так что расхождения нет. `null` не проверяется: `not: {type: 'null'}` бессилен (решение моста — `null` = отсутствие).
+- `composer-ci.json` держит `webmozart/assert: ^1.11 || ^2.0` (2026-10-22 UTC): с bundle-standard v3 ячейка prefer-lowest идёт на PHP 8.2, где `reflection-docblock` 5.6.0 тянет `webmozart/assert` 1.9.1 с deprecation «Use of "static" in callables»; PHPUnit 9 (`convertDeprecationsToExceptions`) превращает её в исключение, `PhpDocExtractor` его глотает, и `array<string, Owner>` денормализуется массивами — падают тесты `AdditionalPropertiesNormalizerTest`. В приложении этого нет.
+
+## CollectionNormalizer (1.4, 2026-10-26 UTC)
+
+- Спецификация: `~/PhpstormProjects/msstc4php/dto-generator/docs/internal/specs/2026-10-26-collections-design.md` §4.
+- Берёт значение только при ключе контекста `dto_generator_collection = {class, item}` (его пишет Symfony-мост через
+  `#[Context]` свойства) и только для `class === $type` / `$data instanceof class` (подкласс тоже пишется); поэтому `getSupportedTypes()`
+  — `['object' => false]` (не кэшируется). Перед элементами ключ из контекста убирается.
+- Скаляры (`int`, `float`, `string`, `bool`) проверяет сам: у Serializer нет нормализатора встроенных типов;
+  `float` принимает int и делает float. Остальное — `denormalize($value, item)` с `deserialization_path` вида
+  `prices[0]`, ошибки — `NotNormalizableValueException::createForUnexpectedDataType(..., true)`.
+- Сборка (`builder()`, кэш по классу в `$builders`): публичный статический `fromArray()`, иначе публичный конструктор
+  неабстрактного класса; первый параметр — список (без типа, `array`, `iterable`, `mixed`, union с ними; не variadic —
+  `Tag ...$t` взял бы список целиком), остальные необязательны. Тип читается как строка `(string) $type`:
+  `ReflectionUnionType` запрещён `phpstan-php74.neon`. `\InvalidArgumentException` (dto-collection `ElementTypeMismatch`)
+  из сборки → NNVE с `previous`, `canUseMessageForUser=false`; прочие `\Error` — баг класса, летят как есть [решение: контракт «отказ данных = InvalidArgumentException» описан в docblock и README; коллекция с `mixed`-элементами, бросающая TypeError/ValueError, даёт 500, а `InvalidElementType` dto-collection — NNVE, хотя это баг объявления: различать без зависимости от dto-collection нельзя]; абстрактный
+  класс и параметр по ссылке отвергаются при выборе стратегии; `fromArray()`,
+  вернувший не экземпляр, → NNVE (конструктор не подставляется). Без конструктора PHP молча проглотил бы аргументы. Чтение: публичный нестатический `toArray()` без обязательных параметров (`reader()`, через ReflectionMethod — `__call` и
+  приватный метод не в счёт; массив или Traversable),
+  иначе `iterator_to_array($data, false)`; пустой список — `[]` до Serializer (`empty_array_as_object` дал бы
+  ArrayObject); не массив от Serializer — `LogicException`.
+- `item` проверяется в `denormalize()` (скаляр, `mixed`, класс/интерфейс; `[]` — только у класса: у ArrayDenormalizer
+  нет типа для списка скаляров), иначе
+  `InvalidArgumentException` — ошибка конфигурации, а не данных. `supports*` его не проверяют, чтобы ошибка была
+  понятной, а не уходила в ObjectNormalizer.
+- XML/CSV не поддерживаются (одиночный элемент и строки-числа) — записано в README.
+- `get_debug_type()` запрещён `phpstan-php74.neon` (пакет обязан грузиться на 7.4) — свой `typeOf()`.
+  Файл в `excludePaths` baseline и в `paths` `phpstan-symfony.neon`, как `AdditionalPropertiesNormalizer`.
+
+### Подводные камни инструментов (2026-10-27 UTC)
+
+- `make check` не запускает `phpstan-symfony.neon`, а CI запускает (`.github/workflows/checks.yml`): проверять вручную
+  `vendor/bin/phpstan analyse -c phpstan-symfony.neon`. Там же видно: `denormalize()` должен оставаться `: mixed`
+  (условный return интерфейса), `@return object` в PHPDoc конфликтует.
+- Rector (deadCode) вырезает из фикстур «неиспользуемые» параметры, конструкторы и приватные фабрики —
+  `tests/Fixture/Collection` в `withSkip`. php-cs-fixer удаляет `@var mixed`/`@param mixed` — в фикстурах писать
+  конкретный PHPDoc (`list<mixed>`), а параметры использовать (иначе phpstan-symfony: unused parameter).

@@ -5,12 +5,13 @@ declare(strict_types=1);
 namespace Msstc4Symfony\DtoGeneratorBridge\Runtime\Bundle\DependencyInjection;
 
 use Msstc4Symfony\DtoGeneratorBridge\Runtime\AdditionalPropertiesNormalizer;
+use Msstc4Symfony\DtoGeneratorBridge\Runtime\CollectionNormalizer;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Reference;
 use WeakMap;
 
 /**
- * The normalizer's service, which DtoGeneratorRuntimeBundle and the bridge's bundle register alike: one id, one
+ * The normalizers' services, which DtoGeneratorRuntimeBundle and the bridge's bundle register alike: one id, one
  * definition, so either bundle or both give the same container. Needs DropOrphanNormalizerPass beside it.
  *
  * @api
@@ -39,5 +40,6 @@ final class Normalizers
             ])
             ->addTag('serializer.normalizer')
         ;
+        $container->register(CollectionNormalizer::class, CollectionNormalizer::class)->addTag('serializer.normalizer');
     }
 }
