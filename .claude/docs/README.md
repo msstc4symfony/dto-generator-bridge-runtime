@@ -57,7 +57,7 @@
   неабстрактного класса; первый параметр — список (без типа, `array`, `iterable`, `mixed`, union с ними; не variadic —
   `Tag ...$t` взял бы список целиком), остальные необязательны. Тип читается как строка `(string) $type`:
   `ReflectionUnionType` запрещён `phpstan-php74.neon`. `\InvalidArgumentException` (dto-collection `ElementTypeMismatch`)
-  из сборки → NNVE с `previous`, `canUseMessageForUser=false`; прочие `\Error` — баг класса, летят как есть; абстрактный
+  из сборки → NNVE с `previous`, `canUseMessageForUser=false`; прочие `\Error` — баг класса, летят как есть [решение: контракт «отказ данных = InvalidArgumentException» описан в docblock и README; коллекция с `mixed`-элементами, бросающая TypeError/ValueError, даёт 500, а `InvalidElementType` dto-collection — NNVE, хотя это баг объявления: различать без зависимости от dto-collection нельзя]; абстрактный
   класс и параметр по ссылке отвергаются при выборе стратегии; `fromArray()`,
   вернувший не экземпляр, → NNVE (конструктор не подставляется). Без конструктора PHP молча проглотил бы аргументы. Чтение: публичный нестатический `toArray()` без обязательных параметров (`reader()`, через ReflectionMethod — `__call` и
   приватный метод не в счёт; массив или Traversable),

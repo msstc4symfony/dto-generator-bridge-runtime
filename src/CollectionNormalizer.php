@@ -21,9 +21,11 @@ use Traversable;
  * object as the list. The bridge names the class and the type of its items in the property's Context; the items go
  * through the Serializer, so they may be DTOs, enums or dates themselves.
  *
- * Built through a public static fromArray() of the list when the class has one, else a public constructor of it; read
- * through a public toArray() when it has one, else by iteration. Lists come as JSON gives them: XML and CSV, which give
- * a single item or a string, are not read.
+ * Built through a public static fromArray() of the list when the class has one, else a public constructor of it; an
+ * abstract class is not built. Read through a public, non-static toArray() without required parameters when it has
+ * one, else by iteration. A collection refuses items with an \InvalidArgumentException, which reaches the Serializer
+ * as data it cannot read; any other throwable is the class's own failure and passes as it is. Lists come as JSON gives
+ * them: XML and CSV, which give a single item or a string, are not read.
  *
  * Runs on PHP 8.0+ with symfony/serializer 5.4 to 8, but stays parseable by PHP 7.4, which lints the whole package.
  *
@@ -180,7 +182,9 @@ final class CollectionNormalizer implements NormalizerInterface, DenormalizerInt
     {
         $builder = array_key_exists($class, $this->builders) ? $this->builders[$class] : $this->builders[$class] = $this->builder($class);
         if (!$builder instanceof Closure) {
-            throw NotNormalizableValueException::createForUnexpectedDataType(sprintf('%s has neither a public static fromArray() nor a public constructor that takes the list of items.', $class), $items, [$class], $path);
+            $message = (new ReflectionClass($class))->isAbstract() ? '%s is abstract, so no collection of it is built.' : '%s has neither a public static fromArray() nor a public constructor that takes the list of items.';
+
+            throw NotNormalizableValueException::createForUnexpectedDataType(sprintf($message, $class), $items, [$class], $path);
         }
 
         // A collection that checks its items refuses them as dto-collection's do, with an InvalidArgumentException; any

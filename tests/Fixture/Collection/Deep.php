@@ -8,7 +8,7 @@ use ArrayIterator;
 use IteratorAggregate;
 
 /**
- * Iterable, with a toArray() that wants an argument, and one hidden behind __call.
+ * Iterable, with a toArray() that wants an argument.
  *
  * @implements IteratorAggregate<int, int>
  */

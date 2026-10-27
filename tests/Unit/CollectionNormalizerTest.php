@@ -12,6 +12,7 @@ use Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Fixture\Collection\Bare;
 use Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Fixture\Collection\Basket;
 use Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Fixture\Collection\ByReference;
 use Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Fixture\Collection\Called;
+use Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Fixture\Collection\Child;
 use Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Fixture\Collection\Declining;
 use Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Fixture\Collection\Deep;
 use Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Fixture\Collection\Failing;
@@ -26,7 +27,9 @@ use Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Fixture\Collection\Numbers;
 use Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Fixture\Collection\Opaque;
 use Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Fixture\Collection\Optional;
 use Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Fixture\Collection\Pair;
+use Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Fixture\Collection\Parent_;
 use Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Fixture\Collection\Repeated;
+use Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Fixture\Collection\Shared;
 use Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Fixture\Collection\Sized;
 use Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Fixture\Collection\Strict;
 use Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Fixture\Collection\SubGuarded;
@@ -261,7 +264,6 @@ final class CollectionNormalizerTest extends TestCase
             'no list parameter' => [Named::class],
             'factory of two arguments' => [Sized::class],
             'no parameters' => [Bare::class],
-            'abstract' => [Template::class],
             'by reference' => [ByReference::class],
         ];
     }
@@ -369,6 +371,27 @@ final class CollectionNormalizerTest extends TestCase
             self::assertFalse($exception->canUseMessageForUser());
             self::assertSame(0, $exception->getCode());
         }
+    }
+
+    public function testRefusesAnAbstractClassWhateverItsFactory(): void
+    {
+        $this->expectException(NotNormalizableValueException::class);
+        $this->expectExceptionMessage(Template::class . ' is abstract, so no collection of it is built.');
+
+        $this->serializer->denormalize([1], Template::class, null, ['dto_generator_collection' => ['class' => Template::class, 'item' => 'int']]);
+    }
+
+    public function testIteratesAClassWhoseToArrayIsStatic(): void
+    {
+        self::assertSame([4], $this->serializer->normalize(new Shared([4]), null, ['dto_generator_collection' => ['class' => Shared::class, 'item' => 'int']]));
+    }
+
+    public function testReadsEachClassThroughItsOwnToArray(): void
+    {
+        $context = ['dto_generator_collection' => ['class' => Parent_::class, 'item' => 'string']];
+
+        self::assertSame(['parent'], $this->serializer->normalize(new Parent_(), null, $context));
+        self::assertSame(['child'], $this->serializer->normalize(new Child(), null, $context));
     }
 
     public function testLeavesTheBugsOfAFactoryAlone(): void

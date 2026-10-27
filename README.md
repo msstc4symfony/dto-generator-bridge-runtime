@@ -123,10 +123,13 @@ Tag::class}`, and `CollectionNormalizer` (registered by the bundle) uses it:
   is checked as `int`, `float` (an int becomes a float), `string` or `bool`; `mixed` takes it as it is. The collection
   comes from a public static `fromArray()` when the class has one, otherwise from a public constructor; either takes
   the list as its first parameter (untyped, `array`, `iterable` or `mixed`, not variadic), any further ones optional.
-  A map, a scalar, a wrong item, a class built neither way, or an `InvalidArgumentException` the collection throws
-  for its items (as dto-collection's lists do) is a `NotNormalizableValueException` with the path (`tags[2]`), so
+  An abstract class is not built. A map, a scalar, a wrong item, a class built neither way, or an
+  `InvalidArgumentException` the collection throws for its items (as dto-collection's lists do) is a
+  `NotNormalizableValueException` with the path (`tags[2]`), so
   `COLLECT_DENORMALIZATION_ERRORS` reports it like any other. A JSON object with the keys `"0"` … `"n-1"` decodes to
-  the same PHP array as a list and is read as one. An item type the Serializer cannot read (`?int`, a list of
+  the same PHP array as a list and is read as one. A collection that checks `mixed` items itself must refuse them with an
+  `InvalidArgumentException`: any other throwable (`TypeError`, `ValueError`) is taken for a bug of the class and
+  passes as it is. An item type the Serializer cannot read (`?int`, a list of
   scalars such as `float[]`) is an `InvalidArgumentException`; an interface needs a discriminator map, as anywhere
   in the Serializer.
 - **Writing:** a public `toArray()` (an array or anything iterable) when the class has one, otherwise iteration; the
