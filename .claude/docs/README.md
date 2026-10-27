@@ -48,12 +48,18 @@
 
 - Спецификация: `~/PhpstormProjects/msstc4php/dto-generator/docs/internal/specs/2026-10-26-collections-design.md` §4.
 - Берёт значение только при ключе контекста `dto_generator_collection = {class, item}` (его пишет Symfony-мост через
-  `#[Context]` свойства) и только для `class === $type` / `get_class($data) === class`; поэтому `getSupportedTypes()`
+  `#[Context]` свойства) и только для `class === $type` / `$data instanceof class` (подкласс тоже пишется); поэтому `getSupportedTypes()`
   — `['object' => false]` (не кэшируется). Перед элементами ключ из контекста убирается.
 - Скаляры (`int`, `float`, `string`, `bool`) проверяет сам: у Serializer нет нормализатора встроенных типов;
   `float` принимает int и делает float. Остальное — `denormalize($value, item)` с `deserialization_path` вида
   `prices[0]`, ошибки — `NotNormalizableValueException::createForUnexpectedDataType(..., true)`.
-- Сборка: публичный статический `fromArray()`, иначе `new $type($items)`; чтение: `toArray()`, иначе
-  `iterator_to_array($data, false)`.
+- Сборка: публичный статический `fromArray()`, вернувший экземпляр класса, иначе публичный конструктор с ≥1
+  параметром и ≤1 обязательным (`ReflectionClass`); иначе `NotNormalizableValueException` (без конструктора PHP молча
+  проглотил бы аргументы и потерял элементы). Чтение: публичный `toArray()` (`is_callable`, массив или Traversable),
+  иначе `iterator_to_array($data, false)`; не массив от Serializer — `LogicException`.
+- `item` проверяется в `denormalize()` (скаляр, `mixed`, класс/интерфейс, с любым числом `[]`), иначе
+  `InvalidArgumentException` — ошибка конфигурации, а не данных. `supports*` его не проверяют, чтобы ошибка была
+  понятной, а не уходила в ObjectNormalizer.
+- XML/CSV не поддерживаются (одиночный элемент и строки-числа) — записано в README.
 - `get_debug_type()` запрещён `phpstan-php74.neon` (пакет обязан грузиться на 7.4) — свой `typeOf()`.
   Файл в `excludePaths` baseline и в `paths` `phpstan-symfony.neon`, как `AdditionalPropertiesNormalizer`.

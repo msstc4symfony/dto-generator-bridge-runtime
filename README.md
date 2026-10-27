@@ -120,11 +120,16 @@ bridge writes the property's `#[Context]` with the key `dto_generator_collection
 Tag::class}`, and `CollectionNormalizer` (registered by the bundle) uses it:
 
 - **Reading:** the data must be a list; each item goes through the Serializer as `item` (a DTO, an enum, a date), or
-  is checked as `int`, `float` (an int becomes a float), `string` or `bool`; `mixed` takes it as it is. The collection comes from a public
-  static `fromArray(array)` when the class has one, otherwise from `new Class(array)`. A map, a scalar or a wrong item
-  is a `NotNormalizableValueException` with the item's path (`tags[2]`), so `COLLECT_DENORMALIZATION_ERRORS` reports
-  it like any other.
-- **Writing:** `toArray()` when the class has one, otherwise iteration; the items go through the Serializer.
+  is checked as `int`, `float` (an int becomes a float), `string` or `bool`; `mixed` takes it as it is. The collection
+  comes from a public static `fromArray(array)` when the class has one, otherwise from a public constructor that takes
+  the list (any further parameters optional). A map, a scalar, a wrong item or a class built neither way is a
+  `NotNormalizableValueException` with the item's path (`tags[2]`), so `COLLECT_DENORMALIZATION_ERRORS` reports it
+  like any other. A JSON object with the keys `"0"` … `"n-1"` decodes to the same PHP array as a list and is read as
+  one. An item type the Serializer cannot read (`?int`) is an `InvalidArgumentException`.
+- **Writing:** a public `toArray()` (an array or anything iterable) when the class has one, otherwise iteration; the
+  items go through the Serializer. An object of a subclass of the context's class is written too.
+- **Formats:** lists as JSON gives them. XML and CSV give a single item as the item itself and numbers as strings,
+  which the normalizer does not undo.
 
 Without the context key the normalizer leaves an object alone, so other collection-like classes keep their own
 normalizers.

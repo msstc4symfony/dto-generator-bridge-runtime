@@ -4,28 +4,40 @@ declare(strict_types=1);
 
 namespace Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Unit;
 
+use ArrayObject;
+use DateTimeImmutable;
 use Msstc4Symfony\DtoGeneratorBridge\Runtime\CollectionNormalizer;
 use Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Fixture\Collection\Basket;
+use Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Fixture\Collection\Guarded;
+use Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Fixture\Collection\Hidden;
+use Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Fixture\Collection\Instanced;
 use Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Fixture\Collection\Keyed;
 use Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Fixture\Collection\Numbers;
 use Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Fixture\Collection\Opaque;
+use Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Fixture\Collection\Pair;
 use Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Fixture\Collection\Repeated;
+use Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Fixture\Collection\SubGuarded;
 use Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Fixture\Collection\Tag;
 use Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Fixture\Collection\TagList;
+use Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Fixture\Collection\Wrapped;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\PropertyInfo\Extractor\PhpDocExtractor;
 use Symfony\Component\PropertyInfo\Extractor\ReflectionExtractor;
 use Symfony\Component\PropertyInfo\PropertyInfoExtractor;
 use Symfony\Component\Serializer\Attribute\Context;
 use Symfony\Component\Serializer\Exception\InvalidArgumentException;
+use Symfony\Component\Serializer\Exception\LogicException;
 use Symfony\Component\Serializer\Exception\NotNormalizableValueException;
+use Symfony\Component\Serializer\Exception\PartialDenormalizationException;
 use Symfony\Component\Serializer\Mapping\ClassDiscriminatorFromClassMetadata;
 use Symfony\Component\Serializer\Mapping\Factory\ClassMetadataFactory;
 use Symfony\Component\Serializer\Mapping\Loader\AttributeLoader;
 use Symfony\Component\Serializer\NameConverter\MetadataAwareNameConverter;
 use Symfony\Component\Serializer\Normalizer\ArrayDenormalizer;
+use Symfony\Component\Serializer\Normalizer\DateTimeNormalizer;
 use Symfony\Component\Serializer\Normalizer\ObjectNormalizer;
 use Symfony\Component\Serializer\Serializer;
+use Symfony\Component\Serializer\SerializerInterface;
 
 /**
  * The normalizer in a Serializer built as FrameworkBundle builds it; the fixtures need the attributes of Symfony 6.4+.
@@ -46,7 +58,7 @@ final class CollectionNormalizerTest extends TestCase
         $types = new PropertyInfoExtractor([], [new PhpDocExtractor(), new ReflectionExtractor()]);
         $objects = new ObjectNormalizer($metadata, new MetadataAwareNameConverter($metadata), null, $types, new ClassDiscriminatorFromClassMetadata($metadata));
         $this->normalizer = new CollectionNormalizer();
-        $this->serializer = new Serializer([$this->normalizer, new ArrayDenormalizer(), $objects]);
+        $this->serializer = new Serializer([$this->normalizer, new DateTimeNormalizer(), new ArrayDenormalizer(), $objects]);
     }
 
     public function testReadsAPropertyIntoItsCollection(): void
@@ -184,6 +196,7 @@ final class CollectionNormalizerTest extends TestCase
         self::assertFalse($this->normalizer->supportsDenormalization([], Numbers::class, null, $context));
         self::assertFalse($this->normalizer->supportsDenormalization([], TagList::class));
         self::assertFalse($this->normalizer->supportsDenormalization([], TagList::class, null, ['dto_generator_collection' => 'x']));
+        self::assertFalse($this->normalizer->supportsDenormalization([], TagList::class, null, ['dto_generator_collection' => new ArrayObject(['class' => TagList::class, 'item' => Tag::class])]));
         self::assertFalse($this->normalizer->supportsDenormalization([], TagList::class, null, ['dto_generator_collection' => ['class' => 1, 'item' => Tag::class]]));
         self::assertFalse($this->normalizer->supportsDenormalization([], TagList::class, null, ['dto_generator_collection' => ['class' => TagList::class, 'item' => 1]]));
         self::assertFalse($this->normalizer->supportsDenormalization([], 'App\\Missing', null, ['dto_generator_collection' => ['class' => 'App\\Missing', 'item' => Tag::class]]));
@@ -200,6 +213,120 @@ final class CollectionNormalizerTest extends TestCase
         $this->expectExceptionMessage(Opaque::class . ' is neither readable through toArray() nor iterable.');
 
         $this->serializer->normalize(new Opaque(), null, ['dto_generator_collection' => ['class' => Opaque::class, 'item' => 'int']]);
+    }
+
+    /**
+     * @dataProvider unbuildable
+     *
+     * @param class-string $class
+     */
+    public function testRefusesAClassItCannotBuildFromAList(string $class): void
+    {
+        try {
+            $this->serializer->denormalize([1], $class, null, ['dto_generator_collection' => ['class' => $class, 'item' => 'int'], 'deserialization_path' => 'items']);
+            self::fail('The class cannot be built.');
+        } catch (NotNormalizableValueException $exception) {
+            self::assertSame($class . ' has neither a public static fromArray() that returns it nor a public constructor that takes the list of items.', $exception->getMessage());
+            self::assertSame([$class], $exception->getExpectedTypes());
+            self::assertSame('items', $exception->getPath());
+        }
+    }
+
+    /**
+     * @return array<string, array{class-string}>
+     */
+    public static function unbuildable(): array
+    {
+        return ['no constructor' => [Opaque::class], 'two arguments' => [Pair::class], 'nothing public' => [Hidden::class]];
+    }
+
+    public function testBuildsThroughTheConstructorWhenFromArrayIsNoFactory(): void
+    {
+        $instanced = $this->serializer->denormalize([1, 2], Instanced::class, null, ['dto_generator_collection' => ['class' => Instanced::class, 'item' => 'int']]);
+
+        self::assertInstanceOf(Instanced::class, $instanced);
+        self::assertSame([1, 2], $instanced->items());
+    }
+
+    public function testReadsAndWritesItemsThroughTheSerializer(): void
+    {
+        $context = ['dto_generator_collection' => ['class' => Instanced::class, 'item' => DateTimeImmutable::class]];
+        $dates = $this->serializer->denormalize(['2026-10-27T00:00:00+00:00'], Instanced::class, null, $context);
+
+        self::assertInstanceOf(Instanced::class, $dates);
+        $date = $dates->items()[0];
+        self::assertInstanceOf(DateTimeImmutable::class, $date);
+        self::assertSame('2026-10-27', $date->format('Y-m-d'));
+        self::assertSame(['2026-10-27T00:00:00+00:00'], $this->serializer->normalize(new Numbers([$date]), null, ['dto_generator_collection' => ['class' => Numbers::class, 'item' => DateTimeImmutable::class]]));
+    }
+
+    public function testRefusesAnItemTypeTheSerializerCannotRead(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('The item type ?int of ' . Numbers::class . ' in the context key dto_generator_collection is no class, int, float, string, bool, mixed or list of them.');
+
+        $this->serializer->denormalize([], Numbers::class, null, ['dto_generator_collection' => ['class' => Numbers::class, 'item' => '?int']]);
+    }
+
+    public function testReadsAListOfListsOfAClass(): void
+    {
+        $grid = $this->serializer->denormalize([[['name' => 'red']]], Instanced::class, null, ['dto_generator_collection' => ['class' => Instanced::class, 'item' => Tag::class . '[]']]);
+
+        self::assertInstanceOf(Instanced::class, $grid);
+        $row = $grid->items()[0];
+        self::assertIsArray($row);
+        self::assertInstanceOf(Tag::class, $row[0]);
+    }
+
+    public function testCollectsTheErrorsOfItemsWithTheOthers(): void
+    {
+        try {
+            $this->serializer->denormalize(['tags' => [['name' => 'red']], 'prices' => [1.5, 'x']], Basket::class, null, ['collect_denormalization_errors' => true]);
+            self::fail('A string is no float.');
+        } catch (PartialDenormalizationException $exception) {
+            self::assertSame(['prices[1]'], array_map(static fn (NotNormalizableValueException $error): ?string => $error->getPath(), $exception->getErrors()));
+        }
+    }
+
+    public function testReadsAnIterableToArrayAndIteratesAClassWhoseToArrayIsHidden(): void
+    {
+        self::assertSame([1, 2], $this->serializer->normalize(new Wrapped([1, 2]), null, ['dto_generator_collection' => ['class' => Wrapped::class, 'item' => 'int']]));
+        self::assertSame([3], $this->serializer->normalize(new Guarded([3]), null, ['dto_generator_collection' => ['class' => Guarded::class, 'item' => 'int']]));
+    }
+
+    public function testWritesASubclassOfTheCollectionClass(): void
+    {
+        self::assertTrue($this->normalizer->supportsNormalization(new SubGuarded([1]), null, ['dto_generator_collection' => ['class' => Guarded::class, 'item' => 'int']]));
+        self::assertFalse($this->normalizer->supportsDenormalization([1], SubGuarded::class, null, ['dto_generator_collection' => ['class' => Guarded::class, 'item' => 'int']]));
+    }
+
+    public function testNeedsASerializer(): void
+    {
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage(CollectionNormalizer::class . ' needs a Serializer that normalizes.');
+
+        (new CollectionNormalizer())->normalize(new Numbers([1.5]));
+    }
+
+    public function testNeedsASerializerThatDenormalizes(): void
+    {
+        $normalizer = new CollectionNormalizer();
+        $normalizer->setSerializer(new class implements SerializerInterface {
+            public function serialize(mixed $data, string $format, array $context = []): string
+            {
+                return '';
+            }
+
+            public function deserialize(mixed $data, string $type, string $format, array $context = []): mixed
+            {
+                return null;
+            }
+        });
+
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage(CollectionNormalizer::class . ' needs a Serializer that denormalizes.');
+
+        $normalizer->denormalize([['name' => 'red']], TagList::class, null, ['dto_generator_collection' => ['class' => TagList::class, 'item' => Tag::class]]);
     }
 
     public function testRefusesAMalformedContext(): void
