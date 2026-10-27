@@ -53,13 +53,27 @@
 - Скаляры (`int`, `float`, `string`, `bool`) проверяет сам: у Serializer нет нормализатора встроенных типов;
   `float` принимает int и делает float. Остальное — `denormalize($value, item)` с `deserialization_path` вида
   `prices[0]`, ошибки — `NotNormalizableValueException::createForUnexpectedDataType(..., true)`.
-- Сборка: публичный статический `fromArray()`, вернувший экземпляр класса, иначе публичный конструктор с ≥1
-  параметром и ≤1 обязательным (`ReflectionClass`); иначе `NotNormalizableValueException` (без конструктора PHP молча
-  проглотил бы аргументы и потерял элементы). Чтение: публичный `toArray()` (`is_callable`, массив или Traversable),
-  иначе `iterator_to_array($data, false)`; не массив от Serializer — `LogicException`.
-- `item` проверяется в `denormalize()` (скаляр, `mixed`, класс/интерфейс, с любым числом `[]`), иначе
+- Сборка (`builder()`, кэш по классу в `$builders`): публичный статический `fromArray()`, иначе публичный конструктор
+  неабстрактного класса; первый параметр — список (без типа, `array`, `iterable`, `mixed`, union с ними; не variadic —
+  `Tag ...$t` взял бы список целиком), остальные необязательны. Тип читается как строка `(string) $type`:
+  `ReflectionUnionType` запрещён `phpstan-php74.neon`. `\InvalidArgumentException` (dto-collection `ElementTypeMismatch`)
+  и `\Error` (абстрактный `new static`) из сборки → NNVE с `previous`, `canUseMessageForUser=false`; `fromArray()`,
+  вернувший не экземпляр, → NNVE (конструктор не подставляется). Без конструктора PHP молча проглотил бы аргументы. Чтение: публичный `toArray()` (`is_callable`, массив или Traversable),
+  иначе `iterator_to_array($data, false)`; пустой список — `[]` до Serializer (`empty_array_as_object` дал бы
+  ArrayObject); не массив от Serializer — `LogicException`.
+- `item` проверяется в `denormalize()` (скаляр, `mixed`, класс/интерфейс; `[]` — только у класса: у ArrayDenormalizer
+  нет типа для списка скаляров), иначе
   `InvalidArgumentException` — ошибка конфигурации, а не данных. `supports*` его не проверяют, чтобы ошибка была
   понятной, а не уходила в ObjectNormalizer.
 - XML/CSV не поддерживаются (одиночный элемент и строки-числа) — записано в README.
 - `get_debug_type()` запрещён `phpstan-php74.neon` (пакет обязан грузиться на 7.4) — свой `typeOf()`.
   Файл в `excludePaths` baseline и в `paths` `phpstan-symfony.neon`, как `AdditionalPropertiesNormalizer`.
+
+### Подводные камни инструментов (2026-10-27 UTC)
+
+- `make check` не запускает `phpstan-symfony.neon`, а CI запускает (`.github/workflows/checks.yml`): проверять вручную
+  `vendor/bin/phpstan analyse -c phpstan-symfony.neon`. Там же видно: `denormalize()` должен оставаться `: mixed`
+  (условный return интерфейса), `@return object` в PHPDoc конфликтует.
+- Rector (deadCode) вырезает из фикстур «неиспользуемые» параметры, конструкторы и приватные фабрики —
+  `tests/Fixture/Collection` в `withSkip`. php-cs-fixer удаляет `@var mixed`/`@param mixed` — в фикстурах писать
+  конкретный PHPDoc (`list<mixed>`), а параметры использовать (иначе phpstan-symfony: unused parameter).

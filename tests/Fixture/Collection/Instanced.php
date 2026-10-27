@@ -28,6 +28,14 @@ final class Instanced
     /**
      * @return list<mixed>
      */
+    public function toArray(): array
+    {
+        return $this->items;
+    }
+
+    /**
+     * @return list<mixed>
+     */
     public function items(): array
     {
         return $this->items;

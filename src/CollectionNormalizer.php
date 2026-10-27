@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Msstc4Symfony\DtoGeneratorBridge\Runtime;
 
+use Closure;
+use Error;
 use ReflectionClass;
 use ReflectionMethod;
 use Symfony\Component\Serializer\Exception\InvalidArgumentException;
@@ -20,9 +22,9 @@ use Traversable;
  * object as the list. The bridge names the class and the type of its items in the property's Context; the items go
  * through the Serializer, so they may be DTOs, enums or dates themselves.
  *
- * Built through a public static fromArray() when the class has one, else its public constructor; read through a public
- * toArray() when it has one, else by iteration. Lists come as JSON gives them: XML and CSV, which give a single item
- * or a string, are not read.
+ * Built through a public static fromArray() of the list when the class has one, else a public constructor of it; read
+ * through a public toArray() when it has one, else by iteration. Lists come as JSON gives them: XML and CSV, which give
+ * a single item or a string, are not read.
  *
  * Runs on PHP 8.0+ with symfony/serializer 5.4 to 8, but stays parseable by PHP 7.4, which lints the whole package.
  *
@@ -41,7 +43,13 @@ final class CollectionNormalizer implements NormalizerInterface, DenormalizerInt
     /** gettype() names as get_debug_type() gives them; phpstan-php74.neon, which checks all of src, bans the function. */
     private const TYPE_NAMES = ['boolean' => 'bool', 'integer' => 'int', 'double' => 'float', 'NULL' => 'null'];
 
+    /** The parameter types that take the list. */
+    private const LIST_TYPES = ['array', 'iterable', 'mixed'];
+
     private ?SerializerInterface $serializer = null;
+
+    /** @var array<class-string, (Closure(list<mixed>): mixed)|null> how each class is built, found once */
+    private array $builders = [];
 
     public function setSerializer(SerializerInterface $serializer): void
     {
@@ -58,13 +66,19 @@ final class CollectionNormalizer implements NormalizerInterface, DenormalizerInt
      */
     public function normalize(mixed $data, ?string $format = null, array $context = []): array
     {
-        $elements = is_object($data) && is_callable([$data, 'toArray']) ? $data->toArray() : $data;
+        // __call makes any method callable, so the method must exist too.
+        $elements = is_object($data) && method_exists($data, 'toArray') && is_callable([$data, 'toArray']) ? $data->toArray() : $data;
         if (!is_array($elements) && !$elements instanceof Traversable) {
             throw new InvalidArgumentException(sprintf('%s is neither readable through toArray() nor iterable.', is_object($data) ? get_class($data) : gettype($data)));
         }
 
-        unset($context[self::CONTEXT]);
         $items = is_array($elements) ? $elements : iterator_to_array($elements, false);
+        // empty_array_as_object makes the Serializer write [] as an ArrayObject.
+        if ($items === []) {
+            return [];
+        }
+
+        unset($context[self::CONTEXT]);
         $normalized = $this->normalizer()->normalize($items, $format, $context);
         if (!is_array($normalized)) {
             throw new LogicException(sprintf('The Serializer normalized a list into %s.', $this->typeOf($normalized)));
@@ -90,9 +104,10 @@ final class CollectionNormalizer implements NormalizerInterface, DenormalizerInt
      *
      * @throws InvalidArgumentException when the context does not name the class and a type the Serializer reads items as
      * @throws NotNormalizableValueException when the data is no list, an item is not of the type, or the class cannot be
-     *                                       built from the list
+     *                                       built from the list or refuses it
+     * @throws LogicException when the Serializer does not denormalize
      */
-    public function denormalize(mixed $data, string $type, ?string $format = null, array $context = []): object
+    public function denormalize(mixed $data, string $type, ?string $format = null, array $context = []): mixed
     {
         $collection = $this->collection($context);
         if ($collection === null) {
@@ -100,7 +115,7 @@ final class CollectionNormalizer implements NormalizerInterface, DenormalizerInt
         }
 
         if (!$this->readable($collection['item'])) {
-            throw new InvalidArgumentException(sprintf('The item type %s of %s in the context key %s is no class, int, float, string, bool, mixed or list of them.', $collection['item'], $type, self::CONTEXT));
+            throw new InvalidArgumentException(sprintf('The item type %s of %s in the context key %s is no class, int, float, string, bool, mixed or list of classes.', $collection['item'], $type, self::CONTEXT));
         }
 
         $path = $context['deserialization_path'] ?? null;
@@ -140,40 +155,89 @@ final class CollectionNormalizer implements NormalizerInterface, DenormalizerInt
     }
 
     /**
-     * Whether the Serializer reads an item as the type: a class, a scalar this class checks, mixed, or a list of them.
+     * Whether the Serializer reads an item as the type: a class, a scalar this class checks, mixed, or a list of classes
+     * (ArrayDenormalizer has no type for a list of scalars).
      */
     private function readable(string $item): bool
     {
-        while (substr($item, -2) === '[]') {
-            $item = substr($item, 0, -2);
+        $class = $item;
+        while (substr($class, -2) === '[]') {
+            $class = substr($class, 0, -2);
         }
 
-        return isset(self::SCALARS[$item]) || $item === 'mixed' || class_exists($item) || interface_exists($item);
+        return ($class === $item && (isset(self::SCALARS[$item]) || $item === 'mixed')) || class_exists($class) || interface_exists($class);
     }
 
     /**
      * @param class-string $class
      * @param list<mixed> $items
      *
-     * @throws NotNormalizableValueException when the class has no way to be built from the list
+     * @throws NotNormalizableValueException when the class has no way to be built from the list, or refuses it
      */
     private function build(string $class, array $items, ?string $path): object
     {
-        if (method_exists($class, 'fromArray')) {
-            $factory = new ReflectionMethod($class, 'fromArray');
-            $collection = $factory->isStatic() && $factory->isPublic() ? $factory->invoke(null, $items) : null;
-            if ($collection instanceof $class) {
-                return $collection;
+        $builder = array_key_exists($class, $this->builders) ? $this->builders[$class] : $this->builders[$class] = $this->builder($class);
+        if (!$builder instanceof Closure) {
+            throw NotNormalizableValueException::createForUnexpectedDataType(sprintf('%s has neither a public static fromArray() nor a public constructor that takes the list of items.', $class), $items, [$class], $path);
+        }
+
+        // A collection that checks its items refuses them as dto-collection's do, with an InvalidArgumentException; an
+        // abstract class's factory may fail to build it.
+        try {
+            $collection = $builder($items);
+        } catch (\InvalidArgumentException|Error $exception) {
+            throw NotNormalizableValueException::createForUnexpectedDataType($exception->getMessage(), $items, [$class], $path, false, 0, $exception);
+        }
+
+        if (!$collection instanceof $class) {
+            throw NotNormalizableValueException::createForUnexpectedDataType(sprintf('%s::fromArray() gave %s, not the collection.', $class, $this->typeOf($collection)), $items, [$class], $path);
+        }
+
+        return $collection;
+    }
+
+    /**
+     * A public static fromArray() of the list, or a public constructor of it; either may take further optional
+     * parameters.
+     *
+     * @param class-string $class
+     *
+     * @return (Closure(list<mixed>): mixed)|null
+     */
+    private function builder(string $class): ?Closure
+    {
+        $reflection = new ReflectionClass($class);
+        if ($reflection->hasMethod('fromArray')) {
+            $factory = $reflection->getMethod('fromArray');
+            if ($factory->isStatic() && $factory->isPublic() && $this->takesTheList($factory)) {
+                return static fn (array $items): mixed => $factory->invoke(null, $items);
             }
         }
 
-        $reflection = new ReflectionClass($class);
         $constructor = $reflection->getConstructor();
-        if ($reflection->isInstantiable() && $constructor !== null && $constructor->getNumberOfParameters() >= 1 && $constructor->getNumberOfRequiredParameters() <= 1) {
-            return $reflection->newInstance($items);
+        if ($reflection->isInstantiable() && $constructor instanceof ReflectionMethod && $this->takesTheList($constructor)) {
+            return static fn (array $items): object => $reflection->newInstance($items);
         }
 
-        throw NotNormalizableValueException::createForUnexpectedDataType(sprintf('%s has neither a public static fromArray() that returns it nor a public constructor that takes the list of items.', $class), $items, [$class], $path);
+        return null;
+    }
+
+    /**
+     * Whether the list goes as the first argument and the only required one: a variadic parameter takes the items one by
+     * one.
+     */
+    private function takesTheList(ReflectionMethod $method): bool
+    {
+        $parameters = $method->getParameters();
+        if ($parameters === [] || $parameters[0]->isVariadic() || $method->getNumberOfRequiredParameters() > 1) {
+            return false;
+        }
+
+        // A union type reads "array|string"; ReflectionUnionType is no class on PHP 7.4, which loads the package.
+        $type = $parameters[0]->getType();
+        $names = $type === null ? ['mixed'] : explode('|', ltrim((string) $type, '?'));
+
+        return array_intersect($names, self::LIST_TYPES) !== [];
     }
 
     /**
@@ -188,6 +252,11 @@ final class CollectionNormalizer implements NormalizerInterface, DenormalizerInt
         // An item the Serializer has no type for (a union, a list of scalars) stays as the data has it.
         if ($item === 'mixed') {
             return $value;
+        }
+
+        // ArrayDenormalizer refuses anything but an array for a list, and tells no path.
+        if (substr($item, -2) === '[]' && !is_array($value)) {
+            throw NotNormalizableValueException::createForUnexpectedDataType(sprintf('%s must be a list, %s given.', $label, $this->typeOf($value)), $value, ['array'], $at, true);
         }
 
         $check = self::SCALARS[$item] ?? null;

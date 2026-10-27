@@ -9,4 +9,17 @@ namespace Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Fixture\Collection;
  */
 final class Pair
 {
+    /** @var list<mixed> */
+    public array $items;
+
+    public int $size;
+
+    /**
+     * @param list<mixed> $items
+     */
+    public function __construct(array $items, int $size)
+    {
+        $this->items = $items;
+        $this->size = $size;
+    }
 }
