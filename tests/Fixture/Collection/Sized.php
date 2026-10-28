@@ -18,6 +18,8 @@ final class Sized
      */
     public static function fromArray(array $items, int $size): self
     {
+        \assert(\count($items) === $size);
+
         return new self();
     }
 }

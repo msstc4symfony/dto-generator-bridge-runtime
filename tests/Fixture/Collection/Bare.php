@@ -9,7 +9,10 @@ namespace Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Fixture\Collection;
  */
 final class Bare
 {
+    public int $arguments;
+
     public function __construct()
     {
+        $this->arguments = \func_num_args();
     }
 }

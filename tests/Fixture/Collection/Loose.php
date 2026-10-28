@@ -10,7 +10,7 @@ namespace Msstc4Symfony\DtoGeneratorBridge\Runtime\Test\Fixture\Collection;
 final class Loose
 {
     /** @var list<mixed> */
-    public array $items;
+    public $items;
 
     /**
      * @param list<mixed> $items
